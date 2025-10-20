@@ -1,24 +1,27 @@
-use sui_json_rpc_types::SuiTransactionBlockEffectsAPI;
 use anyhow::bail;
 use base64::Engine;
+use futures::FutureExt;
 use reqwest::Client;
 use seal_sdk_rs::generic_types::{ObjectID, SuiAddress};
 use serde::Deserialize;
+use serde_json::json;
+use std::sync::{Arc, Mutex, MutexGuard};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use std::{env, fs};
-use serde_json::json;
+use sui_json_rpc_types::SuiTransactionBlockEffectsAPI;
 use sui_keys::keystore::{InMemKeystore, Keystore};
 use sui_sdk::rpc_types::SuiTransactionBlockResponseOptions;
 use sui_sdk::wallet_context::WalletContext;
 use sui_sdk::{SuiClientBuilder, SUI_COIN_TYPE};
 use sui_types::object::Owner;
 use sui_types::programmable_transaction_builder::ProgrammableTransactionBuilder;
-use sui_types::transaction::{Transaction, TransactionData};
-use testcontainers::core::{ContainerPort, ExecCommand, Mount};
+use sui_types::transaction::TransactionData;
+use testcontainers::core::{ContainerPort, ExecCommand};
 use testcontainers::runners::AsyncRunner;
 use testcontainers::{ContainerAsync, GenericImage, ImageExt};
 use tokio::io::AsyncReadExt;
 use tokio::net::TcpListener;
+use tokio::sync::OnceCell;
 
 pub const APPROVE_PACKAGE: [&str; 1] = [
     "oRzrCwYAAAAGAQACAwIFBQcEBwsWCCEgDEEHAAEAAAABAAEKAgAMc2VhbF9hcHByb3ZlCHdpbGRjYXJkAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAAQECAA=="
@@ -53,7 +56,48 @@ const SEAL_SERVER_INTERNAL_PORT: u16 = 2024;
 
 const DOCKER_NETWORK: &str = "seal-sdk-rs";
 
-pub async fn setup() -> anyhow::Result<Setup> {
+static SETUP: OnceCell<ArcSetup> = OnceCell::const_new();
+
+#[derive(Clone)]
+pub struct ArcSetup {
+    inner: Arc<Mutex<Option<Setup>>>,
+}
+
+impl ArcSetup {
+    pub fn lock_unchecked<'a>(&'a self) -> MutexGuard<'a, Option<Setup>> {
+        self.inner.lock().unwrap()
+    }
+}
+
+impl Drop for ArcSetup {
+    fn drop(&mut self) {
+        if Arc::strong_count(&self.inner) == 2 {
+            let setup = SETUP.get()
+                .unwrap()
+                .inner
+                .lock()
+                .unwrap()
+                .take();
+
+            drop(setup)
+        }
+    }
+}
+
+pub async fn setup() -> anyhow::Result<ArcSetup> {
+    SETUP.get_or_try_init(|| async {
+        let setup = init_setup().await?;
+        let inner = Arc::new(Mutex::new(Some(setup)));
+
+        anyhow::Result::Ok(ArcSetup {
+            inner,
+        })
+    })
+        .await
+        .map(Clone::clone)
+}
+
+pub async fn init_setup() -> anyhow::Result<Setup> {
     let localnet = GenericImage::new(LOCALNET_IMAGE_NAME, LOCALNET_IMAGE_TAG)
         .with_exposed_port(ContainerPort::Tcp(9000))
         .with_exposed_port(ContainerPort::Tcp(9123))

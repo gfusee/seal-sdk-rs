@@ -1,3 +1,4 @@
+use std::ops::DerefMut;
 use crate::utils::setup::setup;
 use seal_sdk_rs::native_sui_sdk::client::seal_client::SealClient;
 use seal_sdk_rs::session_key::SessionKey;
@@ -9,18 +10,13 @@ use sui_types::Identifier;
 pub mod utils;
 
 #[tokio::test]
-async fn test_setup() -> anyhow::Result<()> {
-    setup().await?;
-
-    Ok(())
-}
-
-#[tokio::test]
 async fn test_encrypt_decrypt_bytes_single_server() -> anyhow::Result<()> {
-    let mut setup = setup().await?;
+    let arc_setup = setup().await?;
+    let mut setup_guard = arc_setup.lock_unchecked();
+    let setup = setup_guard.deref_mut().as_mut().unwrap();
 
     let sui_client = SuiClientBuilder::default()
-        .build(setup.rpc_url)
+        .build(&setup.rpc_url)
         .await?;
 
     let seal_client = SealClient::new(
@@ -74,10 +70,12 @@ async fn test_encrypt_decrypt_bytes_single_server() -> anyhow::Result<()> {
 
 #[tokio::test]
 async fn test_encrypt_decrypt_u64_single_server() -> anyhow::Result<()> {
-    let mut setup = setup().await?;
+    let arc_setup = setup().await?;
+    let mut setup_guard = arc_setup.lock_unchecked();
+    let setup = setup_guard.deref_mut().as_mut().unwrap();
 
     let sui_client = SuiClientBuilder::default()
-        .build(setup.rpc_url)
+        .build(&setup.rpc_url)
         .await?;
 
     let seal_client = SealClient::new(
