@@ -1,0 +1,36 @@
+[package]
+name = "seal-sdk-rs"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+async-trait = "=0.1.89"
+anyhow = "=1.0"
+fastcrypto = { git = "https://github.com/MystenLabs/fastcrypto", rev = "d1fcb853196c3de7888ed8fad74f419b8c8fbe3b", features = ["aes"] }
+serde = "=1.0.228"
+sui-sdk-types = { git = "https://github.com/mystenlabs/sui-rust-sdk", features = ["serde"], rev = "86a9e06" }
+base64 = "=0.22.1"
+futures = "=0.3.31"
+tokio = { version = "=1.46.1", features = ["full"] }
+seal_crypto = { package = "crypto", git = "https://github.com/mystenlabs/seal", rev = "6755476d6f2eb4e7069f073228516a8eb7c7c1ea" }
+thiserror = "=1.0.69"
+bcs = "=0.1.6"
+rand = "=0.8.5"
+serde_json = "=1.0.145"
+chrono = "=0.4.39"
+hex = "=0.4"
+
+reqwest = { version = "=0.11", optional = true }
+http = { version = "=0.2.12", optional = true }
+moka = { version = "=0.12.11", features = ["future"], optional = true }
+sui_types = { git = "https://github.com/mystenlabs/sui", rev = "22642cf", package = "sui-types", optional = true }
+sui_keys = { git = "https://github.com/mystenlabs/sui", rev = "22642cf", package = "sui-keys", optional = true }
+sui_sdk = { git = "https://github.com/mystenlabs/sui", rev = "22642cf", package = "sui-sdk", optional = true }
+shared_crypto = { git = "https://github.com/MystenLabs/sui", rev = "22642cf", package = "shared-crypto", optional = true }
+
+[features]
+default = ["client", "native-tls", "native-sui-sdk"]
+native-tls = ["reqwest/native-tls"]
+client = ["reqwest", "http"]
+moka-client = ["moka"]
+native-sui-sdk = ["sui_sdk", "sui_types", "sui_keys", "shared_crypto"]
