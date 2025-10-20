@@ -1,9 +1,9 @@
-use std::collections::HashMap;
-use std::sync::Arc;
+use async_trait::async_trait;
 use core::future::Future;
+use std::collections::HashMap;
 use std::hash::Hash;
 use std::marker::PhantomData;
-use async_trait::async_trait;
+use std::sync::Arc;
 use tokio::sync::Mutex;
 
 #[async_trait]
@@ -11,7 +11,11 @@ pub trait SealCache: Send + Sync {
     type Key;
     type Value;
 
-    async fn try_get_with<Fut, Error>(&self, key: Self::Key, init: Fut) -> Result<Self::Value, Arc<Error>>
+    async fn try_get_with<Fut, Error>(
+        &self,
+        key: Self::Key,
+        init: Fut,
+    ) -> Result<Self::Value, Arc<Error>>
     where
         Fut: Future<Output = Result<Self::Value, Error>> + Send,
         Error: Send + Sync + 'static;
@@ -46,10 +50,14 @@ impl<Key: Send + Sync, Value: Send + Sync> SealCache for NoCache<Key, Value> {
     type Key = Key;
     type Value = Value;
 
-    async fn try_get_with<Fut, Error>(&self, _key: Self::Key, init: Fut) -> Result<Self::Value, Arc<Error>>
+    async fn try_get_with<Fut, Error>(
+        &self,
+        _key: Self::Key,
+        init: Fut,
+    ) -> Result<Self::Value, Arc<Error>>
     where
-        Fut: Future<Output=Result<Self::Value, Error>> + Send,
-        Error: Send + Sync + 'static
+        Fut: Future<Output = Result<Self::Value, Error>> + Send,
+        Error: Send + Sync + 'static,
     {
         init.await.map_err(Arc::new)
     }
@@ -65,7 +73,11 @@ where
     type Value = Value;
 
     // Simple implementation that doesn't perform any kind of request coalescing
-    async fn try_get_with<Fut, Error>(&self, key: Self::Key, init: Fut) -> Result<Self::Value, Arc<Error>>
+    async fn try_get_with<Fut, Error>(
+        &self,
+        key: Self::Key,
+        init: Fut,
+    ) -> Result<Self::Value, Arc<Error>>
     where
         Fut: Future<Output = Result<Self::Value, Error>> + Send,
         Error: Send + Sync + 'static,
@@ -88,10 +100,8 @@ where
                     }
 
                     Ok(value)
-                },
-                Err(err) => {
-                    Err(Arc::new(err))
                 }
+                Err(err) => Err(Arc::new(err)),
             }
         }
     }
@@ -99,10 +109,10 @@ where
 
 #[cfg(feature = "moka")]
 mod moka {
+    use crate::client::cache::SealCache;
+    use async_trait::async_trait;
     use std::hash::Hash;
     use std::sync::Arc;
-    use async_trait::async_trait;
-    use crate::client::cache::SealCache;
 
     #[async_trait]
     impl<Key, Value> SealCache for moka::future::Cache<Key, Value>
@@ -113,9 +123,13 @@ mod moka {
         type Key = Key;
         type Value = Value;
 
-        async fn try_get_with<Fut, Error>(&self, key: Self::Key, init: Fut) -> Result<Self::Value, Arc<Error>>
+        async fn try_get_with<Fut, Error>(
+            &self,
+            key: Self::Key,
+            init: Fut,
+        ) -> Result<Self::Value, Arc<Error>>
         where
-            Fut: Future<Output=Result<Self::Value, Error>> + Send,
+            Fut: Future<Output = Result<Self::Value, Error>> + Send,
             Error: Send + Sync + 'static,
         {
             moka::future::Cache::try_get_with(self, key, init).await

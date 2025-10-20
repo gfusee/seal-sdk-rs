@@ -22,6 +22,6 @@ pub trait HttpClient: Sync {
         &self,
         url: &str,
         headers: HashMap<String, String>,
-        body: S
+        body: S,
     ) -> Result<PostResponse, Self::PostError>;
 }

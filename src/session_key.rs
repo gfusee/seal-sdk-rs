@@ -1,15 +1,17 @@
+use crate::crypto::{
+    Certificate, ElGamalPublicKey, ElGamalSecretKey, ElgamalVerificationKey, FetchKeyRequest,
+};
 use crate::error::SessionKeyError;
 use crate::generic_types::{ObjectID, SuiAddress};
 use crate::signer::Signer;
 use base64::Engine;
 use chrono::{DateTime, Utc};
-use seal_crypto::elgamal::genkey;
 use fastcrypto::ed25519::{Ed25519KeyPair, Ed25519PublicKey};
 use fastcrypto::traits::KeyPair;
 use rand::thread_rng;
+use seal_crypto::elgamal::genkey;
 use serde::{Deserialize, Serialize};
 use sui_sdk_types::{SimpleSignature, UserSignature};
-use crate::crypto::{Certificate, ElGamalPublicKey, ElGamalSecretKey, ElgamalVerificationKey, FetchKeyRequest};
 
 const MIN_TTL_MIN: u16 = 1;
 const MAX_TTL_MAX: u16 = 30;
@@ -40,18 +42,16 @@ impl SessionKey {
     where
         ObjectID: From<ID>,
         SessionKeyError: From<SigError>,
-        Sig: Signer<Error = SigError>
+        Sig: Signer<Error = SigError>,
     {
         let package_id: ObjectID = package_id.into();
 
         if ttl_min < MIN_TTL_MIN || ttl_min > MAX_TTL_MAX {
-            return Err(
-                SessionKeyError::InvalidTTLMin {
-                    min: MIN_TTL_MIN,
-                    max: MAX_TTL_MAX,
-                    received: ttl_min,
-                }
-            )
+            return Err(SessionKeyError::InvalidTTLMin {
+                min: MIN_TTL_MIN,
+                max: MAX_TTL_MAX,
+                received: ttl_min,
+            });
         };
 
         let signer_address = signer.get_sui_address()?;
@@ -70,25 +70,23 @@ impl SessionKey {
             return Err(SessionKeyError::CannotGenerateSignedMessage {
                 package_id,
                 creation_timestamp_ms: now_ms,
-                ttl_min
-            })
+                ttl_min,
+            });
         };
 
-        let signature = signer.sign_personal_message(
-            message_to_sign.as_bytes().to_vec()
-        ).await?;
+        let signature = signer
+            .sign_personal_message(message_to_sign.as_bytes().to_vec())
+            .await?;
 
-        Ok(
-            SessionKey {
-                address: signer_address,
-                package_id,
-                creation_time_ms: chrono::Utc::now().timestamp_millis() as u64,
-                ttl_min,
-                session_key,
-                personal_message_signer_address_and_public_key: (signer_address, signer_public_key),
-                personal_message_signature: signature.sig.to_bytes(),
-            }
-        )
+        Ok(SessionKey {
+            address: signer_address,
+            package_id,
+            creation_time_ms: chrono::Utc::now().timestamp_millis() as u64,
+            ttl_min,
+            session_key,
+            personal_message_signer_address_and_public_key: (signer_address, signer_public_key),
+            personal_message_signature: signature.sig.to_bytes(),
+        })
     }
 
     pub fn address(&self) -> &SuiAddress {
@@ -103,13 +101,14 @@ impl SessionKey {
         &self,
         approve_transaction_data: Vec<u8>,
     ) -> Result<(FetchKeyRequest, ElGamalSecretKey), SessionKeyError> {
-        let approve_transaction_data_base64 = base64::engine::general_purpose::STANDARD.encode(&approve_transaction_data);
+        let approve_transaction_data_base64 =
+            base64::engine::general_purpose::STANDARD.encode(&approve_transaction_data);
 
-        let (signed_request, enc_secret, enc_key, enc_verification_key) = self.get_signed_request(
-            approve_transaction_data
-        )?;
+        let (signed_request, enc_secret, enc_key, enc_verification_key) =
+            self.get_signed_request(approve_transaction_data)?;
 
-        let request_signature = fastcrypto::traits::Signer::sign(&self.session_key, &signed_request);
+        let request_signature =
+            fastcrypto::traits::Signer::sign(&self.session_key, &signed_request);
 
         let result = FetchKeyRequest {
             ptb: approve_transaction_data_base64,
@@ -125,21 +124,27 @@ impl SessionKey {
     fn get_signed_request(
         &self,
         approve_transaction_data: Vec<u8>,
-    ) -> Result<(Vec<u8>, ElGamalSecretKey, ElGamalPublicKey, ElgamalVerificationKey), SessionKeyError> {
+    ) -> Result<
+        (
+            Vec<u8>,
+            ElGamalSecretKey,
+            ElGamalPublicKey,
+            ElgamalVerificationKey,
+        ),
+        SessionKeyError,
+    > {
         let keys: (_, ElGamalPublicKey, ElgamalVerificationKey) = genkey(&mut rand::thread_rng());
 
         let req = RequestFormat {
             ptb: approve_transaction_data,
             enc_key: bcs::to_bytes(&keys.1)?,
-            enc_verification_key: bcs::to_bytes(&keys.2)?
+            enc_verification_key: bcs::to_bytes(&keys.2)?,
         };
 
         Ok((bcs::to_bytes(&req)?, keys.0, keys.1, keys.2))
     }
 
-    fn get_certificate(
-        &self
-    ) -> Certificate {
+    fn get_certificate(&self) -> Certificate {
         let personal_message_signature = self.personal_message_signature;
 
         Certificate {
@@ -148,12 +153,13 @@ impl SessionKey {
             creation_time: self.creation_time_ms,
             ttl_min: self.ttl_min,
             signature: UserSignature::Simple(SimpleSignature::Ed25519 {
-                signature: sui_sdk_types::Ed25519Signature::from_bytes(
-                    &personal_message_signature,
-                )
+                signature: sui_sdk_types::Ed25519Signature::from_bytes(&personal_message_signature)
                     .unwrap(),
                 public_key: sui_sdk_types::Ed25519PublicKey::new(
-                    self.personal_message_signer_address_and_public_key.1.0.to_bytes()
+                    self.personal_message_signer_address_and_public_key
+                        .1
+                        .0
+                        .to_bytes(),
                 ),
             }),
             mvr_name: None,

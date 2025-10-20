@@ -7,9 +7,7 @@ pub struct KeyServerInfoCacheKey {
 
 impl KeyServerInfoCacheKey {
     pub fn new(id: ObjectID) -> Self {
-        Self {
-            id
-        }
+        Self { id }
     }
 }
 
@@ -21,11 +19,7 @@ pub struct DerivedKeyCacheKey {
 }
 
 impl DerivedKeyCacheKey {
-    pub fn new(
-        request: Vec<u8>,
-        server_ids: Vec<ObjectID>,
-        threshold: u8
-    ) -> Self {
+    pub fn new(request: Vec<u8>, server_ids: Vec<ObjectID>, threshold: u8) -> Self {
         Self {
             request,
             server_ids,

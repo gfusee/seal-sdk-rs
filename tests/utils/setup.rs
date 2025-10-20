@@ -12,7 +12,7 @@ use sui_json_rpc_types::SuiTransactionBlockEffectsAPI;
 use sui_keys::keystore::{InMemKeystore, Keystore};
 use sui_sdk::rpc_types::SuiTransactionBlockResponseOptions;
 use sui_sdk::wallet_context::WalletContext;
-use sui_sdk::{SuiClientBuilder, SUI_COIN_TYPE};
+use sui_sdk::{SUI_COIN_TYPE, SuiClientBuilder};
 use sui_types::object::Owner;
 use sui_types::programmable_transaction_builder::ProgrammableTransactionBuilder;
 use sui_types::transaction::TransactionData;
@@ -24,7 +24,7 @@ use tokio::net::TcpListener;
 use tokio::sync::OnceCell;
 
 pub const APPROVE_PACKAGE: [&str; 1] = [
-    "oRzrCwYAAAAGAQACAwIFBQcEBwsWCCEgDEEHAAEAAAABAAEKAgAMc2VhbF9hcHByb3ZlCHdpbGRjYXJkAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAAQECAA=="
+    "oRzrCwYAAAAGAQACAwIFBQcEBwsWCCEgDEEHAAEAAAABAAEKAgAMc2VhbF9hcHByb3ZlCHdpbGRjYXJkAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAAQECAA==",
 ];
 
 pub struct Setup {
@@ -72,12 +72,7 @@ impl ArcSetup {
 impl Drop for ArcSetup {
     fn drop(&mut self) {
         if Arc::strong_count(&self.inner) == 2 {
-            let setup = SETUP.get()
-                .unwrap()
-                .inner
-                .lock()
-                .unwrap()
-                .take();
+            let setup = SETUP.get().unwrap().inner.lock().unwrap().take();
 
             drop(setup)
         }
@@ -85,14 +80,13 @@ impl Drop for ArcSetup {
 }
 
 pub async fn setup() -> anyhow::Result<ArcSetup> {
-    SETUP.get_or_try_init(|| async {
-        let setup = init_setup().await?;
-        let inner = Arc::new(Mutex::new(Some(setup)));
+    SETUP
+        .get_or_try_init(|| async {
+            let setup = init_setup().await?;
+            let inner = Arc::new(Mutex::new(Some(setup)));
 
-        anyhow::Result::Ok(ArcSetup {
-            inner,
+            anyhow::Result::Ok(ArcSetup { inner })
         })
-    })
         .await
         .map(Clone::clone)
 }
@@ -127,16 +121,21 @@ pub async fn init_setup() -> anyhow::Result<Setup> {
         .with_network(DOCKER_NETWORK)
         .with_container_name(SEAL_SERVER_CONTAINER_NAME)
         .with_env_var("NODE_URL", format!("http://{LOCALNET_CONTAINER_NAME}:9000"))
-        .with_env_var("FAUCET_URL", format!("http://{LOCALNET_CONTAINER_NAME}:9123"))
+        .with_env_var(
+            "FAUCET_URL",
+            format!("http://{LOCALNET_CONTAINER_NAME}:9123"),
+        )
         .with_env_var("SEAL_SERVER_URL", seal_server_external_url)
         .start()
         .await?;
 
-    let seal_server_external_port= seal.get_host_port_ipv4(SEAL_SERVER_INTERNAL_PORT).await?;
+    let seal_server_external_port = seal.get_host_port_ipv4(SEAL_SERVER_INTERNAL_PORT).await?;
 
     wait_for_seal_server(seal_server_external_port).await;
 
-    let mut result = seal.exec(ExecCommand::new(["cat", "/shared/seal.json"])).await?;
+    let mut result = seal
+        .exec(ExecCommand::new(["cat", "/shared/seal.json"]))
+        .await?;
 
     let mut stdout = String::new();
     let mut reader = result.stdout();
@@ -156,17 +155,15 @@ pub async fn init_setup() -> anyhow::Result<Setup> {
     let mut deployer_wallet = setup_deployment_wallet();
     let deployer_address = deployer_wallet.active_address()?.into();
 
-    faucet(
-        &faucet_external_url,
-        &deployer_address
-    ).await?;
+    faucet(&faucet_external_url, &deployer_address).await?;
 
-    let approve_package_id = deploy_approve_package(
-        &rpc_external_url,
-        &mut deployer_wallet
-    ).await?;
+    let approve_package_id =
+        deploy_approve_package(&rpc_external_url, &mut deployer_wallet).await?;
 
-    let public_key_hex = info.public_key.strip_prefix("0x").unwrap_or(&info.public_key);
+    let public_key_hex = info
+        .public_key
+        .strip_prefix("0x")
+        .unwrap_or(&info.public_key);
     println!("{}", hex::decode(public_key_hex)?.len());
     let public_key = <[u8; 96]>::try_from(hex::decode(public_key_hex)?).unwrap();
 
@@ -178,7 +175,7 @@ pub async fn init_setup() -> anyhow::Result<Setup> {
         key_server_object_id: info.key_server_object_id.parse()?,
         public_key,
         localnet_container: localnet,
-        seal_container: seal
+        seal_container: seal,
     };
 
     Ok(setup)
@@ -207,10 +204,7 @@ fn setup_deployment_wallet() -> WalletContext {
     WalletContext::new_for_tests(random_keystore, None, None)
 }
 
-async fn faucet(
-    faucet_url: &str,
-    wallet_address: &SuiAddress,
-) -> Result<(), reqwest::Error> {
+async fn faucet(faucet_url: &str, wallet_address: &SuiAddress) -> Result<(), reqwest::Error> {
     let url = format!("{}/v2/gas", faucet_url);
     let payload = json!({
         "FixedAmountRequest": {
@@ -237,21 +231,19 @@ async fn faucet(
 
 async fn deploy_approve_package(
     rpc_url: &str,
-    wallet: &mut WalletContext
+    wallet: &mut WalletContext,
 ) -> anyhow::Result<ObjectID> {
-    let client = SuiClientBuilder::default()
-        .build(rpc_url)
-        .await?;
+    let client = SuiClientBuilder::default().build(rpc_url).await?;
 
-    let package_bytes = APPROVE_PACKAGE
-        .map(|module_base64| base64::engine::general_purpose::STANDARD.decode(&module_base64).unwrap());
+    let package_bytes = APPROVE_PACKAGE.map(|module_base64| {
+        base64::engine::general_purpose::STANDARD
+            .decode(&module_base64)
+            .unwrap()
+    });
 
     let mut builder = ProgrammableTransactionBuilder::new();
 
-    builder.publish_immutable(
-        package_bytes.to_vec(),
-        vec![]
-    );
+    builder.publish_immutable(package_bytes.to_vec(), vec![]);
 
     let ptb = builder.finish();
 
@@ -259,12 +251,7 @@ async fn deploy_approve_package(
 
     let gas_payment = client
         .coin_read_api()
-        .get_coins(
-            sender,
-            Some(SUI_COIN_TYPE.to_string()),
-            None,
-            None
-        )
+        .get_coins(sender, Some(SUI_COIN_TYPE.to_string()), None, None)
         .await?
         .data
         .into_iter()
@@ -273,25 +260,20 @@ async fn deploy_approve_package(
 
     let tx_data = TransactionData::new_programmable(
         sender,
-        vec![
-            gas_payment.object_ref()
-        ],
+        vec![gas_payment.object_ref()],
         ptb,
         10000000000,
-        1000
+        1000,
     );
 
-    let tx = wallet.sign_transaction(
-        &tx_data
-    ).await;
+    let tx = wallet.sign_transaction(&tx_data).await;
 
     let result = client
         .quorum_driver_api()
         .execute_transaction_block(
             tx,
-            SuiTransactionBlockResponseOptions::new()
-                .with_effects(),
-            None
+            SuiTransactionBlockResponseOptions::new().with_effects(),
+            None,
         )
         .await?;
 

@@ -1,14 +1,17 @@
 use crate::generic_types::{ObjectID, SuiAddress};
-use fastcrypto::error::{FastCryptoError, FastCryptoResult};
-use fastcrypto::groups::GroupElement;
-use seal_crypto::ibe::{verify_user_secret_key, UserSecretKey};
-use seal_crypto::{create_full_id, elgamal, ibe, seal_decrypt, Ciphertext, IBEEncryptions, IBEPublicKeys, IBEUserSecretKeys};
-use serde::{Deserialize, Serialize};
-use std::collections::{HashMap, HashSet};
 use fastcrypto::ed25519::{Ed25519PublicKey, Ed25519Signature};
 use fastcrypto::encoding::{Encoding, Hex};
+use fastcrypto::error::{FastCryptoError, FastCryptoResult};
+use fastcrypto::groups::GroupElement;
 use fastcrypto::groups::bls12381::G2Element;
 use seal_crypto::elgamal::{PublicKey, SecretKey, VerificationKey};
+use seal_crypto::ibe::{UserSecretKey, verify_user_secret_key};
+use seal_crypto::{
+    Ciphertext, IBEEncryptions, IBEPublicKeys, IBEUserSecretKeys, create_full_id, elgamal, ibe,
+    seal_decrypt,
+};
+use serde::{Deserialize, Serialize};
+use std::collections::{HashMap, HashSet};
 use sui_sdk_types::UserSignature;
 
 pub type ElGamalPublicKey = PublicKey<UserSecretKey>;
@@ -29,7 +32,8 @@ pub struct EncryptedObject {
 
 impl From<seal_crypto::EncryptedObject> for EncryptedObject {
     fn from(value: seal_crypto::EncryptedObject) -> Self {
-        let services = value.services
+        let services = value
+            .services
             .into_iter()
             .map(|e| (e.0.into(), e.1))
             .collect();
@@ -48,7 +52,8 @@ impl From<seal_crypto::EncryptedObject> for EncryptedObject {
 
 impl From<EncryptedObject> for seal_crypto::EncryptedObject {
     fn from(value: EncryptedObject) -> Self {
-        let services = value.services
+        let services = value
+            .services
             .into_iter()
             .map(|e| (e.0.into(), e.1))
             .collect();
@@ -110,7 +115,7 @@ impl FetchKeyRequest {
 #[derive(Serialize, Deserialize, Copy, Clone)]
 pub struct Encryption<G: GroupElement>(pub G, pub G);
 
-impl <G: GroupElement> From<Encryption<G>> for elgamal::Encryption<G> {
+impl<G: GroupElement> From<Encryption<G>> for elgamal::Encryption<G> {
     fn from(value: Encryption<G>) -> Self {
         Self(value.0, value.1)
     }
@@ -162,7 +167,8 @@ pub fn seal_decrypt_all_objects(
         })?;
 
         for decryption_key in seal_response.decryption_keys.iter() {
-            let user_secret_key = elgamal::decrypt(enc_secret, &decryption_key.encrypted_key.into());
+            let user_secret_key =
+                elgamal::decrypt(enc_secret, &decryption_key.encrypted_key.into());
             verify_user_secret_key(&user_secret_key, &decryption_key.id, public_key)?;
 
             cached_keys
@@ -174,10 +180,7 @@ pub fn seal_decrypt_all_objects(
 
     let mut decrypted_results = Vec::with_capacity(encrypted_objects.len());
     for encrypted_object in encrypted_objects.into_iter() {
-        let full_id = create_full_id(
-            &encrypted_object.package_id.0,
-            &encrypted_object.id,
-        );
+        let full_id = create_full_id(&encrypted_object.package_id.0, &encrypted_object.id);
         let keys_for_id = cached_keys.get(&full_id).ok_or_else(|| {
             FastCryptoError::GeneralError(format!(
                 "No keys available for object with full_id {:?}",

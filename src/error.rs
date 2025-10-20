@@ -1,7 +1,7 @@
+use crate::generic_types::ObjectID;
 use fastcrypto::error::FastCryptoError;
 use http::header::{InvalidHeaderName, InvalidHeaderValue};
 use thiserror::Error;
-use crate::generic_types::ObjectID;
 
 #[derive(Debug, Error)]
 pub enum SealClientError {
@@ -66,14 +66,16 @@ pub enum ReqwestError {
 pub enum SessionKeyError {
     #[error("ttl_min should be a value between {min} and {max}, received {received}")]
     InvalidTTLMin { min: u16, max: u16, received: u16 },
-    
-    #[error("Cannot generate the certificate message for package {package_id}, for a duration of {ttl_min} minutes from {creation_timestamp_ms} (unix time in milliseconds)")]
+
+    #[error(
+        "Cannot generate the certificate message for package {package_id}, for a duration of {ttl_min} minutes from {creation_timestamp_ms} (unix time in milliseconds)"
+    )]
     CannotGenerateSignedMessage {
         package_id: ObjectID,
         creation_timestamp_ms: u64,
-        ttl_min: u16
+        ttl_min: u16,
     },
-    
+
     #[error("BCS error: {0}")]
     BCS(#[from] bcs::Error),
 

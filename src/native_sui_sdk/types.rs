@@ -25,7 +25,9 @@ impl From<sui_sdk::types::base_types::ObjectID> for ObjectID {
     }
 }
 
-impl BCSSerializableProgrammableTransaction for sui_sdk::types::transaction::ProgrammableTransaction {
+impl BCSSerializableProgrammableTransaction
+    for sui_sdk::types::transaction::ProgrammableTransaction
+{
     fn to_bcs_bytes(&self) -> Result<Vec<u8>, SealClientError> {
         Ok(bcs::to_bytes(self)?)
     }

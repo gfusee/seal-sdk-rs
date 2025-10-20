@@ -14,14 +14,15 @@ impl HttpClient for reqwest::Client {
         &self,
         url: &str,
         headers: HashMap<String, String>,
-        body: S
+        body: S,
     ) -> Result<PostResponse, Self::PostError> {
         let mut header_map = HeaderMap::new();
 
         for (key, value) in headers {
             header_map.insert(HeaderName::from_str(&key)?, HeaderValue::from_str(&value)?);
         }
-        let response = self.post(url)
+        let response = self
+            .post(url)
             .headers(header_map)
             .body(Body::from(body.to_string()))
             .send()
@@ -30,10 +31,7 @@ impl HttpClient for reqwest::Client {
         let status = response.status().as_u16();
         let text = response.text().await?;
 
-        let response = PostResponse {
-            status,
-            text,
-        };
+        let response = PostResponse { status, text };
 
         Ok(response)
     }

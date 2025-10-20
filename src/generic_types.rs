@@ -1,14 +1,13 @@
-use std::fmt::Display;
-use std::str::FromStr;
+use crate::error::SealClientError;
 use anyhow::anyhow;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
-use crate::error::SealClientError;
+use std::fmt::Display;
+use std::str::FromStr;
 
 #[derive(PartialEq, Eq, Hash, Debug, Copy, Clone)]
 pub struct ObjectID(pub [u8; 32]);
 
-impl From<[u8; 32]> for ObjectID
-{
+impl From<[u8; 32]> for ObjectID {
     fn from(value: [u8; 32]) -> Self {
         Self(value)
     }
@@ -69,7 +68,7 @@ impl Display for ObjectID {
 impl Serialize for ObjectID {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
-        S: Serializer
+        S: Serializer,
     {
         sui_sdk_types::ObjectId::from(*self).serialize(serializer)
     }
@@ -80,7 +79,7 @@ impl<'de> Deserialize<'de> for ObjectID {
     where
         D: Deserializer<'de>,
     {
-       sui_sdk_types::ObjectId::deserialize(deserializer).map(Self::from)
+        sui_sdk_types::ObjectId::deserialize(deserializer).map(Self::from)
     }
 }
 
@@ -114,7 +113,7 @@ impl Display for SuiAddress {
 impl Serialize for SuiAddress {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
-        S: Serializer
+        S: Serializer,
     {
         sui_sdk_types::Address::from(*self).serialize(serializer)
     }
@@ -123,7 +122,7 @@ impl Serialize for SuiAddress {
 impl<'de> Deserialize<'de> for SuiAddress {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
-        D: Deserializer<'de>
+        D: Deserializer<'de>,
     {
         sui_sdk_types::Address::deserialize(deserializer).map(Self::from)
     }

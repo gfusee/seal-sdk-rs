@@ -8,7 +8,7 @@ pub trait Signer {
 
     async fn sign_personal_message(
         &mut self,
-        message: Vec<u8>
+        message: Vec<u8>,
     ) -> Result<Ed25519Signature, Self::Error>;
 
     fn get_public_key(&mut self) -> Result<Ed25519PublicKey, Self::Error>;
