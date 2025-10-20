@@ -70,6 +70,29 @@ where
         }
     }
 
+    pub async fn encrypt<T, ID1, ID2>(
+        &self,
+        package_id: ID1,
+        id: Vec<u8>,
+        threshold: u8,
+        key_servers: Vec<ID2>,
+        data: T,
+    ) -> Result<EncryptedObject, SealClientError>
+    where
+        T: Serialize,
+        ObjectID: From<ID1>,
+        ObjectID: From<ID2>,
+    {
+        let data = bcs::to_bytes(&data)?;
+        self.encrypt_bytes(
+            package_id,
+            id,
+            threshold,
+            key_servers,
+            data,
+        ).await
+    }
+
     pub async fn encrypt_bytes<ID1, ID2>(
         &self,
         package_id: ID1,
@@ -131,6 +154,25 @@ where
         T: DeserializeOwned,
         PTB: BCSSerializableProgrammableTransaction,
     {
+        let bytes = self.decrypt_object_bytes(
+            encrypted_object_data,
+            approve_transaction_data,
+            session_key
+        )
+            .await?;
+
+        Ok(bcs::from_bytes::<T>(&bytes)?)
+    }
+
+    pub async fn decrypt_object_bytes<PTB>(
+        &self,
+        encrypted_object_data: &[u8],
+        approve_transaction_data: PTB,
+        session_key: &SessionKey,
+    ) -> Result<Vec<u8>, SealClientError>
+    where
+        PTB: BCSSerializableProgrammableTransaction,
+    {
         let encrypted_object = bcs::from_bytes::<EncryptedObject>(encrypted_object_data)?;
 
         let service_ids: Vec<ObjectID> = encrypted_object
@@ -166,7 +208,8 @@ where
             .collect::<Vec<_>>();
 
         let encrypted_objects = vec![encrypted_object];
-        let decrypted_result = seal_decrypt_all_objects(
+
+        seal_decrypt_all_objects(
             &enc_secret,
             &derived_keys,
             encrypted_objects,
@@ -174,9 +217,7 @@ where
         )?
             .into_iter()
             .next()
-            .ok_or_else(|| SealClientError::MissingDecryptedObject)?;
-
-        Ok(bcs::from_bytes::<T>(&decrypted_result)?)
+            .ok_or_else(|| SealClientError::MissingDecryptedObject)
     }
 
     async fn fetch_key_server_info(

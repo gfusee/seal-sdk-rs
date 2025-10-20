@@ -1,8 +1,10 @@
 use std::fmt::Display;
-use serde::{Deserialize, Serialize};
+use std::str::FromStr;
+use anyhow::anyhow;
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use crate::error::SealClientError;
 
-#[derive(PartialEq, Eq, Hash, Debug, Copy, Clone, Serialize, Deserialize)]
+#[derive(PartialEq, Eq, Hash, Debug, Copy, Clone)]
 pub struct ObjectID(pub [u8; 32]);
 
 impl From<[u8; 32]> for ObjectID
@@ -48,27 +50,41 @@ impl From<sui_sdk_types::Address> for ObjectID {
     }
 }
 
+impl FromStr for ObjectID {
+    type Err = anyhow::Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        sui_sdk_types::ObjectId::from_str(s)
+            .map(Into::into)
+            .map_err(|_| anyhow!("Failed to parse ObjectID: {s}"))
+    }
+}
+
 impl Display for ObjectID {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         sui_sdk_types::ObjectId::from(*self).fmt(f)
     }
 }
 
-#[cfg(feature = "native-sui-sdk")]
-impl From<ObjectID> for sui_sdk::types::base_types::ObjectID {
-    fn from(value: ObjectID) -> Self {
-        Self::new(value.0)
+impl Serialize for ObjectID {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer
+    {
+        sui_sdk_types::ObjectId::from(*self).serialize(serializer)
     }
 }
 
-#[cfg(feature = "native-sui-sdk")]
-impl From<sui_sdk::types::base_types::ObjectID> for ObjectID {
-    fn from(value: sui_sdk::types::base_types::ObjectID) -> ObjectID {
-        ObjectID(value.into_bytes())
+impl<'de> Deserialize<'de> for ObjectID {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+       sui_sdk_types::ObjectId::deserialize(deserializer).map(Self::from)
     }
 }
 
-#[derive(PartialEq, Eq, Hash, Debug, Copy, Clone, Serialize, Deserialize)]
+#[derive(PartialEq, Eq, Hash, Debug, Copy, Clone)]
 pub struct SuiAddress(pub [u8; 32]);
 
 impl From<[u8; 32]> for SuiAddress {
@@ -92,6 +108,24 @@ impl From<sui_sdk_types::Address> for SuiAddress {
 impl Display for SuiAddress {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         sui_sdk_types::Address::from(*self).fmt(f)
+    }
+}
+
+impl Serialize for SuiAddress {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer
+    {
+        sui_sdk_types::Address::from(*self).serialize(serializer)
+    }
+}
+
+impl<'de> Deserialize<'de> for SuiAddress {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>
+    {
+        sui_sdk_types::Address::deserialize(deserializer).map(Self::from)
     }
 }
 
