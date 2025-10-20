@@ -43,8 +43,8 @@ async fn test_encrypt_decrypt_bytes_single_server() -> anyhow::Result<()> {
 
     _ = approve_builder.programmable_move_call(
         setup.approve_package_id.into(),
-        Identifier::from_str("wildcard").unwrap(),
-        Identifier::from_str("seal_approve").unwrap(),
+        Identifier::from_str("wildcard")?,
+        Identifier::from_str("seal_approve")?,
         vec![],
         vec![
             id_arg
