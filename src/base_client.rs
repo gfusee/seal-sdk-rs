@@ -87,6 +87,28 @@ where
             .await
     }
 
+    pub async fn encrypt_multiple<T, ID1, ID2>(
+        &self,
+        package_id: ID1,
+        id: Vec<u8>,
+        threshold: u8,
+        key_servers: Vec<ID2>,
+        data: Vec<T>,
+    ) -> Result<Vec<EncryptedObject>, SealClientError>
+    where
+        T: Serialize,
+        ObjectID: From<ID1>,
+        ObjectID: From<ID2>,
+    {
+        let data = data
+            .into_iter()
+            .map(|item| bcs::to_bytes(&item))
+            .collect::<Result<Vec<_>, _>>()?;
+
+        self.encrypt_multiple_bytes(package_id, id, threshold, key_servers, data)
+            .await
+    }
+
     pub async fn encrypt_bytes<ID1, ID2>(
         &self,
         package_id: ID1,
@@ -95,6 +117,28 @@ where
         key_servers: Vec<ID2>,
         data: Vec<u8>,
     ) -> Result<EncryptedObject, SealClientError>
+    where
+        ObjectID: From<ID1>,
+        ObjectID: From<ID2>,
+    {
+        let result = self
+            .encrypt_multiple_bytes(package_id, id, threshold, key_servers, vec![data])
+            .await?
+            .into_iter()
+            .next()
+            .unwrap();
+
+        Ok(result)
+    }
+
+    pub async fn encrypt_multiple_bytes<ID1, ID2>(
+        &self,
+        package_id: ID1,
+        id: Vec<u8>,
+        threshold: u8,
+        key_servers: Vec<ID2>,
+        data: Vec<Vec<u8>>,
+    ) -> Result<Vec<EncryptedObject>, SealClientError>
     where
         ObjectID: From<ID1>,
         ObjectID: From<ID2>,
@@ -113,18 +157,24 @@ where
 
         let public_keys = IBEPublicKeys::BonehFranklinBLS12381(public_keys_g2);
 
-        let key_servers = key_servers.into_iter().map(|e| e.into()).collect();
+        let key_servers: Vec<ObjectID> = key_servers.into_iter().map(|e| e.into()).collect();
 
-        let result = seal_encrypt(
-            package_id.0.into(),
-            id,
-            key_servers,
-            &public_keys,
-            threshold,
-            EncryptionInput::Aes256Gcm { data, aad: None },
-        )?;
+        let mut results = Vec::with_capacity(data.len());
 
-        Ok(result.0.into())
+        for data in data {
+            let result = seal_encrypt(
+                package_id.0.into(),
+                id.clone(),
+                key_servers.iter().map(|e| (*e).into()).collect::<Vec<_>>(),
+                &public_keys,
+                threshold,
+                EncryptionInput::Aes256Gcm { data, aad: None },
+            )?;
+
+            results.push(result.0.into());
+        }
+
+        Ok(results)
     }
 
     #[allow(dead_code)]
@@ -152,6 +202,30 @@ where
         Ok(bcs::from_bytes::<T>(&bytes)?)
     }
 
+    pub async fn decrypt_multiple_objects<T, PTB>(
+        &self,
+        encrypted_object_data: &[&[u8]],
+        approve_transaction_data: PTB,
+        session_key: &SessionKey,
+    ) -> Result<Vec<T>, SealClientError>
+    where
+        T: DeserializeOwned,
+        PTB: BCSSerializableProgrammableTransaction,
+    {
+        let results = self
+            .decrypt_multiple_objects_bytes(
+                encrypted_object_data,
+                approve_transaction_data,
+                session_key,
+            )
+            .await?
+            .into_iter()
+            .map(|bytes| bcs::from_bytes::<T>(&bytes))
+            .collect::<Result<Vec<_>, _>>()?;
+
+        Ok(results)
+    }
+
     pub async fn decrypt_object_bytes<PTB>(
         &self,
         encrypted_object_data: &[u8],
@@ -161,9 +235,41 @@ where
     where
         PTB: BCSSerializableProgrammableTransaction,
     {
-        let encrypted_object = bcs::from_bytes::<EncryptedObject>(encrypted_object_data)?;
+        let result = self
+            .decrypt_multiple_objects_bytes(
+                &[encrypted_object_data],
+                approve_transaction_data,
+                session_key,
+            )
+            .await?
+            .into_iter()
+            .next()
+            .unwrap();
 
-        let service_ids: Vec<ObjectID> = encrypted_object
+        Ok(result)
+    }
+
+    pub async fn decrypt_multiple_objects_bytes<PTB>(
+        &self,
+        encrypted_objects_data: &[&[u8]],
+        approve_transaction_data: PTB,
+        session_key: &SessionKey,
+    ) -> Result<Vec<Vec<u8>>, SealClientError>
+    where
+        PTB: BCSSerializableProgrammableTransaction,
+    {
+        if encrypted_objects_data.is_empty() {
+            return Ok(vec![]);
+        }
+
+        let encrypted_objects = encrypted_objects_data
+            .iter()
+            .map(|bytes| bcs::from_bytes::<EncryptedObject>(bytes))
+            .collect::<Result<Vec<_>, _>>()?;
+
+        let first_encrypted_object = encrypted_objects.first().unwrap();
+
+        let service_ids: Vec<ObjectID> = first_encrypted_object
             .services
             .iter()
             .map(|(id, _)| (*id).into())
@@ -183,23 +289,23 @@ where
             session_key.get_fetch_key_request(approve_transaction_data.to_bcs_bytes()?)?;
 
         let derived_keys = self
-            .fetch_derived_keys(signed_request, key_server_info, encrypted_object.threshold)
+            .fetch_derived_keys(
+                signed_request,
+                key_server_info,
+                first_encrypted_object.threshold,
+            )
             .await?
             .into_iter()
             .map(|derived_key| (derived_key.0.into(), derived_key.1))
             .collect::<Vec<_>>();
-
-        let encrypted_objects = vec![encrypted_object];
 
         seal_decrypt_all_objects(
             &enc_secret,
             &derived_keys,
             encrypted_objects,
             &servers_public_keys_map,
-        )?
-        .into_iter()
-        .next()
-        .ok_or_else(|| SealClientError::MissingDecryptedObject)
+        )
+        .map_err(Into::into)
     }
 
     async fn fetch_key_server_info(
@@ -268,17 +374,11 @@ where
                 Ok::<_, SealClientError>((server.object_id, seal_response))
             };
 
-            let cache_key = DerivedKeyCacheKey::new(
-                request_bytes,
-                server.object_id,
-                threshold
-            );
+            let cache_key = DerivedKeyCacheKey::new(request_bytes, server.object_id, threshold);
 
             seal_responses_futures.push(
-                self.derived_key_cache.try_get_with(
-                    cache_key,
-                    response_future
-                )
+                self.derived_key_cache
+                    .try_get_with(cache_key, response_future),
             );
         }
 

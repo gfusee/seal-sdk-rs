@@ -38,7 +38,9 @@ pub struct Setup {
 }
 
 impl Setup {
-    pub async fn add_new_seal_servers<const N: usize>(&mut self) -> anyhow::Result<[SealInstance; N]> {
+    pub async fn add_new_seal_servers<const N: usize>(
+        &mut self,
+    ) -> anyhow::Result<[SealInstance; N]> {
         let start_index = SEAL_SERVER_COUNT + self.extra_seal_servers_count + N;
 
         let mut result = Vec::with_capacity(N);
