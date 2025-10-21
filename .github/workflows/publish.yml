@@ -23,7 +23,7 @@ jobs:
 
       - name: Configure git user
         run: |
-          git config --global user.email "quentus123@gmail.com"
+          git config --global user.email "pro@quentindiebold.com"
           git config --global user.name "Quentin Diebold (CI)"
 
       - name: Install stable toolchain
@@ -38,6 +38,9 @@ jobs:
 
       - name: Install mdBook
         run: cargo install mdbook --locked
+
+      - name: Install licensesnip
+        run: cargo install licensesnip
 
       - name: Build documentation
         run: mdbook build book
