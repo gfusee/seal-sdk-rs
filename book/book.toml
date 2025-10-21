@@ -1,0 +1,12 @@
+[book]
+title = "seal-sdk-rs Guide"
+author = ["Mysten Labs"]
+description = "Developer guide and reference for the seal-sdk-rs crate"
+language = "en"
+multilingual = false
+src = "src"
+
+[output.html]
+fold.enable = true
+
+[preprocessor.links]
