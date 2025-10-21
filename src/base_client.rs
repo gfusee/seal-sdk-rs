@@ -72,7 +72,9 @@ where
     /// Convenience wrapper around [`encrypt_bytes`] that accepts a serializable value.
     ///
     /// The payload is converted to BCS and encrypted with the provided package, identifier,
-    /// key servers, and threshold. Use this when working with a single BCS-serializable item.
+    /// key servers, and threshold. The returned tuple contains the encrypted object and the
+    /// emergency recovery key surfaced by [`encrypt_multiple_bytes`]; discard the key when
+    /// you do not want any single authority to retain unilateral decryption power.
     pub async fn encrypt<T, ID1, ID2>(
         &self,
         package_id: ID1,
@@ -80,7 +82,7 @@ where
         threshold: u8,
         key_servers: Vec<ID2>,
         data: T,
-    ) -> Result<EncryptedObject, SealClientError>
+    ) -> Result<(EncryptedObject, [u8; 32]), SealClientError>
     where
         T: Serialize,
         ObjectID: From<ID1>,
@@ -93,7 +95,10 @@ where
 
     /// Convenience wrapper around [`encrypt_multiple_bytes`] for serializable values.
     ///
-    /// Every item is serialized to BCS before delegating to [`encrypt_multiple_bytes`].
+    /// Mirrors the relationship between [`encrypt`] and [`encrypt_bytes`]: every item is
+    /// serialized to BCS before delegating to [`encrypt_multiple_bytes`]. Each tuple pairs
+    /// the encrypted object with its recovery key—drop the key if you do not want an
+    /// authority outside the key servers to decrypt the data.
     pub async fn encrypt_multiple<T, ID1, ID2>(
         &self,
         package_id: ID1,
@@ -101,7 +106,7 @@ where
         threshold: u8,
         key_servers: Vec<ID2>,
         data: Vec<T>,
-    ) -> Result<Vec<EncryptedObject>, SealClientError>
+    ) -> Result<Vec<(EncryptedObject, [u8; 32])>, SealClientError>
     where
         T: Serialize,
         ObjectID: From<ID1>,
@@ -119,7 +124,9 @@ where
     /// Encrypt a single byte payload, delegating to [`encrypt_multiple_bytes`].
     ///
     /// Internally the payload is wrapped in a one-element `Vec` so that the heavier-weight
-    /// logic in [`encrypt_multiple_bytes`] is reused.
+    /// logic in [`encrypt_multiple_bytes`] is reused. The returned tuple contains the
+    /// encrypted object and an emergency recovery key; discard the key if you do not want an
+    /// authority to retain direct decryption capability outside of the key servers.
     pub async fn encrypt_bytes<ID1, ID2>(
         &self,
         package_id: ID1,
@@ -127,25 +134,28 @@ where
         threshold: u8,
         key_servers: Vec<ID2>,
         data: Vec<u8>,
-    ) -> Result<EncryptedObject, SealClientError>
+    ) -> Result<(EncryptedObject, [u8; 32]), SealClientError>
     where
         ObjectID: From<ID1>,
         ObjectID: From<ID2>,
     {
-        let result = self
+        let (encrypted, recovery_key) = self
             .encrypt_multiple_bytes(package_id, id, threshold, key_servers, vec![data])
             .await?
             .into_iter()
             .next()
             .unwrap();
 
-        Ok(result)
+        Ok((encrypted, recovery_key))
     }
 
     /// Encrypt multiple byte payloads with shared key server metadata.
     ///
     /// Fetches key-server information once and reuses it to encrypt every entry in `data`,
-    /// which is more efficient than issuing repeated [`encrypt_bytes`] calls.
+    /// which is more efficient than issuing repeated [`encrypt_bytes`] calls. Each tuple in
+    /// the returned vector contains the encrypted object and an emergency recovery key that
+    /// can be used if key servers become unavailable. Discard these keys when you do not
+    /// want any single authority to decrypt the data without the key servers.
     pub async fn encrypt_multiple_bytes<ID1, ID2>(
         &self,
         package_id: ID1,
@@ -153,7 +163,7 @@ where
         threshold: u8,
         key_servers: Vec<ID2>,
         data: Vec<Vec<u8>>,
-    ) -> Result<Vec<EncryptedObject>, SealClientError>
+    ) -> Result<Vec<(EncryptedObject, [u8; 32])>, SealClientError>
     where
         ObjectID: From<ID1>,
         ObjectID: From<ID2>,
@@ -177,7 +187,7 @@ where
         let mut results = Vec::with_capacity(data.len());
 
         for data in data {
-            let result = seal_encrypt(
+            let (encrypted_object, recovery_key) = seal_encrypt(
                 package_id.0.into(),
                 id.clone(),
                 key_servers.iter().map(|e| (*e).into()).collect::<Vec<_>>(),
@@ -186,7 +196,7 @@ where
                 EncryptionInput::Aes256Gcm { data, aad: None },
             )?;
 
-            results.push(result.0.into());
+            results.push((encrypted_object.into(), recovery_key));
         }
 
         Ok(results)

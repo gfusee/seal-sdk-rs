@@ -24,7 +24,7 @@ async fn test_encrypt_decrypt_bytes_single_server() -> anyhow::Result<()> {
     let data_to_encrypt = vec![0u8, 1, 2, 3];
     let data_id = vec![6u8];
 
-    let encrypted = seal_client
+    let (encrypted, _) = seal_client
         .encrypt_bytes(
             setup.approve_package_id,
             data_id.clone(),
@@ -77,7 +77,7 @@ async fn test_encrypt_decrypt_multiple_u64_single_server() -> anyhow::Result<()>
     let second_data_to_encrypt = 17u64;
     let data_id = vec![6u8];
 
-    let encrypted = seal_client
+    let encrypted_with_keys = seal_client
         .encrypt_multiple(
             setup.approve_package_id,
             data_id.clone(),
@@ -86,6 +86,11 @@ async fn test_encrypt_decrypt_multiple_u64_single_server() -> anyhow::Result<()>
             vec![first_data_to_encrypt, second_data_to_encrypt],
         )
         .await?;
+
+    let encrypted = encrypted_with_keys
+        .into_iter()
+        .map(|(encrypted, _)| encrypted)
+        .collect::<Vec<_>>();
 
     let mut approve_builder = ProgrammableTransactionBuilder::new();
     let id_arg = approve_builder.pure(data_id)?;
@@ -143,7 +148,7 @@ async fn test_encrypt_decrypt_multiple_bytes_single_server() -> anyhow::Result<(
     let second_data_to_encrypt = vec![4u8, 5, 6, 7, 8];
     let data_id = vec![6u8];
 
-    let encrypted = seal_client
+    let encrypted_with_keys = seal_client
         .encrypt_multiple_bytes(
             setup.approve_package_id,
             data_id.clone(),
@@ -155,6 +160,11 @@ async fn test_encrypt_decrypt_multiple_bytes_single_server() -> anyhow::Result<(
             ],
         )
         .await?;
+
+    let encrypted = encrypted_with_keys
+        .into_iter()
+        .map(|(encrypted, _)| encrypted)
+        .collect::<Vec<_>>();
 
     let mut approve_builder = ProgrammableTransactionBuilder::new();
     let id_arg = approve_builder.pure(data_id)?;
@@ -213,7 +223,7 @@ async fn test_encrypt_decrypt_mutltiple_bytes_encrypt_one_by_one_single_server()
     let second_data_to_encrypt = vec![4u8, 5, 6, 7, 8];
     let data_id = vec![6u8];
 
-    let first_encrypted = seal_client
+    let (first_encrypted, _) = seal_client
         .encrypt_bytes(
             setup.approve_package_id,
             data_id.clone(),
@@ -223,7 +233,7 @@ async fn test_encrypt_decrypt_mutltiple_bytes_encrypt_one_by_one_single_server()
         )
         .await?;
 
-    let second_encrypted = seal_client
+    let (second_encrypted, _) = seal_client
         .encrypt_bytes(
             setup.approve_package_id,
             data_id.clone(),
@@ -290,7 +300,7 @@ async fn test_encrypt_decrypt_mutltiple_bytes_decrypt_one_by_one_single_server()
     let second_data_to_encrypt = vec![4u8, 5, 6, 7, 8];
     let data_id = vec![6u8];
 
-    let encrypted = seal_client
+    let encrypted_with_keys = seal_client
         .encrypt_multiple_bytes(
             setup.approve_package_id,
             data_id.clone(),
@@ -302,6 +312,11 @@ async fn test_encrypt_decrypt_mutltiple_bytes_decrypt_one_by_one_single_server()
             ],
         )
         .await?;
+
+    let encrypted = encrypted_with_keys
+        .into_iter()
+        .map(|(encrypted, _)| encrypted)
+        .collect::<Vec<_>>();
 
     let mut approve_builder = ProgrammableTransactionBuilder::new();
     let id_arg = approve_builder.pure(data_id)?;
@@ -360,7 +375,7 @@ async fn test_encrypt_decrypt_u64_single_server() -> anyhow::Result<()> {
     let data_to_encrypt = 17u64;
     let data_id = vec![6u8];
 
-    let encrypted = seal_client
+    let (encrypted, _) = seal_client
         .encrypt(
             setup.approve_package_id,
             data_id.clone(),
@@ -412,7 +427,7 @@ async fn test_encrypt_decrypt_bytes_three_servers() -> anyhow::Result<()> {
     let data_to_encrypt = vec![0u8, 1, 2, 3];
     let data_id = vec![6u8];
 
-    let encrypted = seal_client
+    let (encrypted, _) = seal_client
         .encrypt_bytes(
             setup.approve_package_id,
             data_id.clone(),
@@ -478,7 +493,7 @@ async fn test_encrypt_decrypt_bytes_three_servers_threshold_two_one_crash() -> a
         seal_instance_that_will_crash.key_server_id,
     ];
 
-    let encrypted = seal_client
+    let (encrypted, _) = seal_client
         .encrypt_bytes(
             setup.approve_package_id,
             data_id.clone(),
@@ -545,7 +560,7 @@ async fn test_encrypt_decrypt_bytes_three_servers_threshold_three_one_crash() ->
         seal_instance_that_will_crash.key_server_id,
     ];
 
-    let encrypted = seal_client
+    let (encrypted, _) = seal_client
         .encrypt_bytes(
             setup.approve_package_id,
             data_id.clone(),

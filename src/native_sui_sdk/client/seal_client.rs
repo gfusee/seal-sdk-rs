@@ -16,7 +16,10 @@ use tokio::sync::Mutex;
 /// is what almost every developer should reach for. When full control over the
 /// underlying HTTP client, Sui client, or cache layers is required, prefer the
 /// raw [`BaseSealClient`] type instead. See the integration tests for examples
-/// of how this specialization is used in practice.
+/// of how this specialization is used in practice. Encryption helpers return a
+/// tuple of the encrypted payload plus an emergency recovery key—drop the key if
+/// you do not want a single authority to retain the power to decrypt every
+/// payload without the key servers.
 ///
 /// # Examples
 ///
@@ -37,7 +40,7 @@ use tokio::sync::Mutex;
 ///     let key_server_id =
 ///         ObjectID::from_str("0x6f4c8bead1dcbef4b880d1b845a70d820ee4da8b36805b97d93ef3e829ae8b55")?;
 ///
-///     let encrypted = seal_client
+///     let (encrypted, recovery_key) = seal_client
 ///         .encrypt_bytes(
 ///             ObjectID::from_str(
 ///                 "0xf5f3a4e1d0c19a43b2c7d8e9f0a1b2c3d4e5f60718293a4b5c6d7e8f90123456",
@@ -49,6 +52,7 @@ use tokio::sync::Mutex;
 ///         )
 ///         .await?;
 ///
+///     drop(recovery_key); // Discard to avoid retaining an authority-level backdoor.
 ///     println!("Encrypted object: {:?}", encrypted);
 ///     Ok(())
 /// }
@@ -86,7 +90,9 @@ impl SealClient {
 /// This convenience type is handy for short-lived tooling or tests, but it keeps
 /// every cached entry for the lifetime of the process. Avoid using it in
 /// long-running services because the unbounded growth can lead to out-of-memory
-/// failures. Prefer the eviction-friendly
+/// failures. Its encryption helpers return the encrypted payload together with
+/// the recovery key—discard the key if you do not want a standalone authority to
+/// decrypt everything. Prefer the eviction-friendly
 /// [`SealClientMokaCache`](crate::native_sui_sdk::client::seal_client::moka::SealClientMokaCache)
 /// when you need caching in production scenarios.
 ///
@@ -109,7 +115,7 @@ impl SealClient {
 ///     let key_server_id =
 ///         ObjectID::from_str("0x6f4c8bead1dcbef4b880d1b845a70d820ee4da8b36805b97d93ef3e829ae8b55")?;
 ///
-///     let encrypted = seal_client
+///     let (encrypted, recovery_key) = seal_client
 ///         .encrypt_bytes(
 ///             ObjectID::from_str(
 ///                 "0xf5f3a4e1d0c19a43b2c7d8e9f0a1b2c3d4e5f60718293a4b5c6d7e8f90123456",
@@ -121,6 +127,7 @@ impl SealClient {
 ///         )
 ///         .await?;
 ///
+///     drop(recovery_key); // Discard to avoid retaining an authority-level backdoor.
 ///     println!("Encrypted object: {:?}", encrypted);
 ///     Ok(())
 /// }
@@ -159,7 +166,9 @@ pub mod moka {
     /// Requires the crate's `moka` feature. Compared with
     /// [`SealClientLeakingCache`](crate::native_sui_sdk::client::seal_client::SealClientLeakingCache),
     /// the Moka-backed caches allow you to configure capacity and eviction,
-    /// making this variant a better fit for long-lived services.
+    /// making this variant a better fit for long-lived services. Like the other
+    /// specializations, encryption calls return both the encrypted payload and a
+    /// recovery key—drop the key to avoid creating a single-party backdoor.
     ///
     /// # Examples
     ///
@@ -188,7 +197,7 @@ pub mod moka {
     ///     let key_server_id =
     ///         ObjectID::from_str("0x6f4c8bead1dcbef4b880d1b845a70d820ee4da8b36805b97d93ef3e829ae8b55")?;
     ///
-    ///     let encrypted = seal_client
+    ///     let (encrypted, recovery_key) = seal_client
     ///         .encrypt_bytes(
     ///             ObjectID::from_str(
     ///                 "0xf5f3a4e1d0c19a43b2c7d8e9f0a1b2c3d4e5f60718293a4b5c6d7e8f90123456",
@@ -200,6 +209,7 @@ pub mod moka {
     ///         )
     ///         .await?;
     ///
+    ///     drop(recovery_key); // Discard to avoid retaining an authority-level backdoor.
     ///     println!("Encrypted object: {:?}", encrypted);
     ///     Ok(())
     /// }

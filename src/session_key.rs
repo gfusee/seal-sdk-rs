@@ -23,6 +23,62 @@ struct RequestFormat {
     enc_verification_key: Vec<u8>,
 }
 
+/// Ephemeral credentials that allow decryption without repeatedly signing with the wallet key.
+///
+/// A session key is valid for a limited window and acts much like a JWT in Web2
+/// systems: once issued, clients can perform seal decryption operations without
+/// prompting the underlying wallet for every request.
+///
+/// Treat the key material with the same care you would give to
+/// an in-memory access token, keep it secure and
+/// drop it as soon as it is no longer required.
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use seal_sdk_rs::generic_types::ObjectID;
+/// use seal_sdk_rs::session_key::SessionKey;
+///
+/// # use seal_sdk_rs::signer::Signer;
+/// # use async_trait::async_trait;
+/// # use fastcrypto::ed25519::{Ed25519PublicKey, Ed25519Signature};
+/// # use std::convert::Infallible;
+/// #
+/// # struct DummySigner;
+/// #
+/// # #[async_trait]
+/// # impl Signer for DummySigner {
+/// #     type Error = Infallible;
+/// #
+/// #     async fn sign_personal_message(
+/// #         &mut self,
+/// #         _message: Vec<u8>,
+/// #     ) -> Result<Ed25519Signature, Self::Error> {
+/// #         Ok(Ed25519Signature::from_bytes(&[0; 64]).unwrap())
+/// #     }
+/// #
+/// #     fn get_public_key(&mut self) -> Result<Ed25519PublicKey, Self::Error> {
+/// #         Ok(Ed25519PublicKey::from_bytes(&[0; 32]).unwrap())
+/// #     }
+/// # }
+/// #
+/// # #[tokio::main]
+/// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// let mut signer = DummySigner;
+/// 
+/// let session_key = SessionKey::new(
+///     ObjectID([0; 32]),
+///     5,
+///     &mut signer,
+/// )
+/// .await?;
+///
+/// // Use `session_key` with `BaseSealClient::decrypt_*` helpers within its TTL.
+/// # Ok(())
+/// # }
+/// ```
+///
+/// For a full runnable setup, check `tests/client_tests.rs`.
 pub struct SessionKey {
     address: SuiAddress,
     package_id: ObjectID,
@@ -34,6 +90,10 @@ pub struct SessionKey {
 }
 
 impl SessionKey {
+    /// Create a session key scoped to `package_id` and valid for `ttl_min` minutes.
+    ///
+    /// This signs a capability with the wallet so subsequent decrypt calls can proceed
+    /// without additional wallet signatures until the TTL expires.
     pub async fn new<ID, SigError, Sig>(
         package_id: ID,
         ttl_min: u16,
