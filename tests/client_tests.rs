@@ -64,7 +64,7 @@ async fn test_encrypt_decrypt_bytes_single_server() -> anyhow::Result<()> {
 }
 
 #[tokio::test]
-async fn test_encrypt_decrypt_mutltiple_u64_single_server() -> anyhow::Result<()> {
+async fn test_encrypt_decrypt_multiple_u64_single_server() -> anyhow::Result<()> {
     let arc_setup = setup().await?;
     let mut setup_guard = arc_setup.lock_unchecked();
     let setup = setup_guard.deref_mut().as_mut().unwrap();
