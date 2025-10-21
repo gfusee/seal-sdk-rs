@@ -75,6 +75,33 @@ where
     /// key servers, and threshold. The returned tuple contains the encrypted object and the
     /// emergency recovery key surfaced by [`encrypt_multiple_bytes`]; discard the key when
     /// you do not want any single authority to retain unilateral decryption power.
+    ///
+    /// # Examples
+    ///
+    /// ```rust,no_run
+    /// # use seal_sdk_rs::error::SealClientError;
+    /// # use seal_sdk_rs::generic_types::ObjectID;
+    /// # use seal_sdk_rs::native_sui_sdk::client::seal_client::SealClient;
+    /// #
+    /// # #[derive(Clone)]
+    /// # struct DemoSetup {
+    /// #     approve_package_id: ObjectID,
+    /// #     key_server_id: ObjectID,
+    /// # }
+    /// #
+    /// # async fn demo(client: &SealClient, setup: &DemoSetup) -> Result<(), SealClientError> {
+    /// let (encrypted, recovery_key) = client
+    ///     .encrypt(
+    ///         setup.approve_package_id,
+    ///         vec![6u8],
+    ///         1,
+    ///         vec![setup.key_server_id.clone()],
+    ///         17u64,
+    ///     )
+    ///     .await?;
+    /// # Ok(())
+    /// # }
+    /// ```
     pub async fn encrypt<T, ID1, ID2>(
         &self,
         package_id: ID1,
@@ -99,6 +126,33 @@ where
     /// serialized to BCS before delegating to [`encrypt_multiple_bytes`]. Each tuple pairs
     /// the encrypted object with its recovery key—drop the key if you do not want an
     /// authority outside the key servers to decrypt the data.
+    ///
+    /// # Examples
+    ///
+    /// ```rust,no_run
+    /// # use seal_sdk_rs::error::SealClientError;
+    /// # use seal_sdk_rs::generic_types::ObjectID;
+    /// # use seal_sdk_rs::native_sui_sdk::client::seal_client::SealClient;
+    /// #
+    /// # #[derive(Clone)]
+    /// # struct DemoSetup {
+    /// #     approve_package_id: ObjectID,
+    /// #     key_server_id: ObjectID,
+    /// # }
+    /// #
+    /// # async fn demo(client: &SealClient, setup: &DemoSetup) -> Result<(), SealClientError> {
+    /// let encrypted = client
+    ///     .encrypt_multiple(
+    ///         setup.approve_package_id,
+    ///         vec![6u8],
+    ///         1,
+    ///         vec![setup.key_server_id.clone()],
+    ///         vec![10u64, 17u64],
+    ///     )
+    ///     .await?;
+    /// # Ok(())
+    /// # }
+    /// ```
     pub async fn encrypt_multiple<T, ID1, ID2>(
         &self,
         package_id: ID1,
@@ -127,6 +181,35 @@ where
     /// logic in [`encrypt_multiple_bytes`] is reused. The returned tuple contains the
     /// encrypted object and an emergency recovery key; discard the key if you do not want an
     /// authority to retain direct decryption capability outside of the key servers.
+    ///
+    /// # Examples
+    ///
+    /// ```rust,no_run
+    /// # use seal_sdk_rs::error::SealClientError;
+    /// # use seal_sdk_rs::generic_types::ObjectID;
+    /// # use seal_sdk_rs::native_sui_sdk::client::seal_client::SealClient;
+    /// #
+    /// # #[derive(Clone)]
+    /// # struct DemoSetup {
+    /// #     approve_package_id: ObjectID,
+    /// #     key_server_id: ObjectID,
+    /// # }
+    /// #
+    /// # async fn demo(client: &SealClient, setup: &DemoSetup) -> Result<(), SealClientError> {
+    /// let data = vec![0u8, 1, 2, 3];
+    /// let (encrypted, recovery_key) = client
+    ///     .encrypt_bytes(
+    ///         setup.approve_package_id,
+    ///         vec![6u8],
+    ///         1,
+    ///         vec![setup.key_server_id.clone()],
+    ///         data,
+    ///     )
+    ///     .await?;
+    /// # let _ = encrypted;
+    /// # Ok(())
+    /// # }
+    /// ```
     pub async fn encrypt_bytes<ID1, ID2>(
         &self,
         package_id: ID1,
@@ -156,6 +239,38 @@ where
     /// the returned vector contains the encrypted object and an emergency recovery key that
     /// can be used if key servers become unavailable. Discard these keys when you do not
     /// want any single authority to decrypt the data without the key servers.
+    ///
+    /// # Examples
+    ///
+    /// ```rust,no_run
+    /// # use seal_sdk_rs::error::SealClientError;
+    /// # use seal_sdk_rs::generic_types::ObjectID;
+    /// # use seal_sdk_rs::native_sui_sdk::client::seal_client::SealClient;
+    /// #
+    /// # #[derive(Clone)]
+    /// # struct DemoSetup {
+    /// #     approve_package_id: ObjectID,
+    /// #     key_server_id: ObjectID,
+    /// # }
+    /// #
+    /// # async fn demo(client: &SealClient, setup: &DemoSetup) -> Result<(), SealClientError> {
+    /// let payloads = vec![vec![0u8, 1, 2, 3], vec![4u8, 5, 6, 7, 8]];
+    /// let encrypted = client
+    ///     .encrypt_multiple_bytes(
+    ///         setup.approve_package_id,
+    ///         vec![6u8],
+    ///         1,
+    ///         vec![setup.key_server_id.clone()],
+    ///         payloads,
+    ///     )
+    ///     .await?;
+    ///
+    /// for (_ciphertext, recovery_key) in encrypted {
+    ///     drop(recovery_key);
+    /// }
+    /// # Ok(())
+    /// # }
+    /// ```
     pub async fn encrypt_multiple_bytes<ID1, ID2>(
         &self,
         package_id: ID1,
@@ -210,6 +325,42 @@ where
         self.fetch_key_server_info(key_server_ids).await
     }
 
+    /// Convenience wrapper around [`decrypt_object_bytes`] that deserializes the result.
+    ///
+    /// Accepts the BCS-encoded `EncryptedObject` bytes and returns the decrypted payload
+    /// as type `T`. This is the mirror of [`encrypt`], handling both byte recovery and
+    /// BCS decoding.
+    ///
+    /// # Examples
+    ///
+    /// ```rust,no_run
+    /// # use seal_sdk_rs::base_client::BCSSerializableProgrammableTransaction;
+    /// # use seal_sdk_rs::crypto::EncryptedObject;
+    /// # use seal_sdk_rs::error::SealClientError;
+    /// # use seal_sdk_rs::native_sui_sdk::client::seal_client::SealClient;
+    /// # use seal_sdk_rs::session_key::SessionKey;
+    /// # struct DemoTransaction;
+    /// # impl BCSSerializableProgrammableTransaction for DemoTransaction {
+    /// #     fn to_bcs_bytes(&self) -> Result<Vec<u8>, SealClientError> {
+    /// #         Ok(vec![])
+    /// #     }
+    /// # }
+    /// # async fn demo(
+    /// #     client: &SealClient,
+    /// #     session_key: &SessionKey,
+    /// #     encrypted: &EncryptedObject,
+    /// # ) -> Result<(), SealClientError> {
+    /// let encrypted_bytes = bcs::to_bytes(encrypted).expect("serialize EncryptedObject");
+    ///
+    /// let approve_ptb = DemoTransaction;
+    ///
+    /// let value: Vec<u8> = client
+    ///     .decrypt_object(&encrypted_bytes, approve_ptb, session_key)
+    ///     .await?;
+    /// # let _ = value;
+    /// # Ok(())
+    /// # }
+    /// ```
     pub async fn decrypt_object<T, PTB>(
         &self,
         encrypted_object_data: &[u8],
@@ -227,6 +378,51 @@ where
         Ok(bcs::from_bytes::<T>(&bytes)?)
     }
 
+    /// Batch-oriented variant of [`decrypt_object`] for multiple payloads.
+    ///
+    /// Each entry in `encrypted_object_data` should be a BCS-encoded `EncryptedObject`.
+    /// Internally delegates to [`decrypt_multiple_objects_bytes`] before deserializing
+    /// every item to `T`.
+    ///
+    /// # Examples
+    ///
+    /// ```rust,no_run
+    /// # use seal_sdk_rs::base_client::BCSSerializableProgrammableTransaction;
+    /// # use seal_sdk_rs::crypto::EncryptedObject;
+    /// # use seal_sdk_rs::error::SealClientError;
+    /// # use seal_sdk_rs::native_sui_sdk::client::seal_client::SealClient;
+    /// # use seal_sdk_rs::session_key::SessionKey;
+    ///
+    /// # struct DemoTransaction;
+    ///
+    /// # impl BCSSerializableProgrammableTransaction for DemoTransaction {
+    /// #     fn to_bcs_bytes(&self) -> Result<Vec<u8>, SealClientError> {
+    /// #         Ok(vec![])
+    /// #     }
+    /// # }
+    /// # async fn demo(
+    /// #     client: &SealClient,
+    /// #     session_key: &SessionKey,
+    /// #     encrypted: &[EncryptedObject],
+    /// # ) -> Result<(), SealClientError> {
+    /// let encrypted_bytes = encrypted
+    ///     .iter()
+    ///     .map(|item| bcs::to_bytes(item).expect("serialize EncryptedObject"))
+    ///     .collect::<Vec<_>>();
+    /// let encrypted_refs = encrypted_bytes
+    ///     .iter()
+    ///     .map(AsRef::<[u8]>::as_ref)
+    ///     .collect::<Vec<_>>();
+    ///
+    /// let approve_ptb = DemoTransaction;
+    ///
+    /// let values: Vec<Vec<u8>> = client
+    ///     .decrypt_multiple_objects(&encrypted_refs, approve_ptb, session_key)
+    ///     .await?;
+    /// # let _ = values;
+    /// # Ok(())
+    /// # }
+    /// ```
     pub async fn decrypt_multiple_objects<T, PTB>(
         &self,
         encrypted_object_data: &[&[u8]],
@@ -251,6 +447,39 @@ where
         Ok(results)
     }
 
+    /// Decrypt a single BCS-encoded `EncryptedObject`, yielding the raw bytes.
+    ///
+    /// This is the byte-level counterpart to [`decrypt_object`], calling
+    /// [`decrypt_multiple_objects_bytes`] with a single element.
+    ///
+    /// # Examples
+    ///
+    /// ```rust,no_run
+    /// # use seal_sdk_rs::base_client::BCSSerializableProgrammableTransaction;
+    /// # use seal_sdk_rs::crypto::EncryptedObject;
+    /// # use seal_sdk_rs::error::SealClientError;
+    /// # use seal_sdk_rs::native_sui_sdk::client::seal_client::SealClient;
+    /// # use seal_sdk_rs::session_key::SessionKey;
+    /// # struct DemoTransaction;
+    /// # impl BCSSerializableProgrammableTransaction for DemoTransaction {
+    /// #     fn to_bcs_bytes(&self) -> Result<Vec<u8>, SealClientError> {
+    /// #         Ok(vec![])
+    /// #     }
+    /// # }
+    /// # async fn demo(
+    /// #     client: &SealClient,
+    /// #     session_key: &SessionKey,
+    /// #     encrypted: &EncryptedObject,
+    /// # ) -> Result<(), SealClientError> {
+    /// let encrypted_bytes = bcs::to_bytes(encrypted).expect("serialize EncryptedObject");
+    /// let approve_ptb = DemoTransaction;
+    /// let bytes = client
+    ///     .decrypt_object_bytes(&encrypted_bytes, approve_ptb, session_key)
+    ///     .await?;
+    /// # let _ = bytes;
+    /// # Ok(())
+    /// # }
+    /// ```
     pub async fn decrypt_object_bytes<PTB>(
         &self,
         encrypted_object_data: &[u8],
@@ -274,6 +503,47 @@ where
         Ok(result)
     }
 
+    /// Decrypt multiple BCS-encoded `EncryptedObject` values, returning raw bytes.
+    ///
+    /// All entries must correspond to the same package, id, services, and threshold;
+    /// otherwise the approval transaction will fail. The byte slices should be obtained
+    /// by serializing [`EncryptedObject`] instances with `bcs::to_bytes`.
+    ///
+    /// # Examples
+    ///
+    /// ```rust,no_run
+    /// # use seal_sdk_rs::base_client::BCSSerializableProgrammableTransaction;
+    /// # use seal_sdk_rs::crypto::EncryptedObject;
+    /// # use seal_sdk_rs::error::SealClientError;
+    /// # use seal_sdk_rs::native_sui_sdk::client::seal_client::SealClient;
+    /// # use seal_sdk_rs::session_key::SessionKey;
+    /// # struct DemoTransaction;
+    /// # impl BCSSerializableProgrammableTransaction for DemoTransaction {
+    /// #     fn to_bcs_bytes(&self) -> Result<Vec<u8>, SealClientError> {
+    /// #         Ok(vec![])
+    /// #     }
+    /// # }
+    /// # async fn demo(
+    /// #     client: &SealClient,
+    /// #     session_key: &SessionKey,
+    /// #     encrypted: &[EncryptedObject],
+    /// # ) -> Result<(), SealClientError> {
+    /// let encrypted_bytes = encrypted
+    ///     .iter()
+    ///     .map(|item| bcs::to_bytes(item).expect("serialize EncryptedObject"))
+    ///     .collect::<Vec<_>>();
+    /// let encrypted_refs = encrypted_bytes
+    ///     .iter()
+    ///     .map(AsRef::<[u8]>::as_ref)
+    ///     .collect::<Vec<_>>();
+    /// let approve_ptb = DemoTransaction;
+    /// let decrypted = client
+    ///     .decrypt_multiple_objects_bytes(&encrypted_refs, approve_ptb, session_key)
+    ///     .await?;
+    /// # let _ = decrypted;
+    /// # Ok(())
+    /// # }
+    /// ```
     pub async fn decrypt_multiple_objects_bytes<PTB>(
         &self,
         encrypted_objects_data: &[&[u8]],
