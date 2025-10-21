@@ -1,16 +1,15 @@
 # Advanced Topics
 
-Deep dive into customization options beyond the default `SealClient`. The
-architecture lets you bring a different version of the Sui SDK, your own HTTP
-transport, custom caches, and bespoke error wrapping, while keeping the ergonomic
-public surface.
+This chapter shows how to plug in custom clients, caches, and transports, plus
+how to pick the right feature flags and error strategy when you deploy the SDK.
 
 ## Custom Sui client
 
-Use `BaseSealClient` with a different Sui SDK revision by re-implementing the
-[`SuiClient`](../../src/sui_client.rs) trait. As an example, the default crate
-implements the trait for `sui_sdk::SuiClient`. You can copy that implementation
-and change the dependency version in `Cargo.toml` to match your fork:
+You can run `BaseSealClient` with a different version of the Sui SDK. Implement
+the [`SuiClient`](../../src/sui_client.rs) trait for the client type you want to
+use and update your `Cargo.toml` to point at that version. The snippet below is
+based on the default implementation for `sui_sdk::SuiClient` and can serve as a
+starting point:
 
 ```rust,no_run
 use seal_sdk_rs::base_client::KeyServerInfo;
@@ -96,12 +95,13 @@ impl SuiClient for sui_sdk::SuiClient {
 }
 ```
 
-Compile `seal-sdk-rs` with your modified dependency version and the new
-implementation takes effect.
+Compile `seal-sdk-rs` against your chosen dependency version and the new
+implementation becomes active.
 
 ## Custom HTTP client
 
-[`HttpClient`](../../src/http_client.rs) only requires one async method:
+[`HttpClient`](../../src/http_client.rs) defines a single method. Implement it
+for your preferred transport (hyper, surf, a custom blocking client, etc.):
 
 ```rust
 use std::collections::HashMap;
@@ -114,19 +114,18 @@ async fn post<S: ToString + Send + Sync>(
 ) -> Result<PostResponse, Self::PostError>;
 ```
 
-Implement this trait for your transport of choice (hyper, surf, reqwest with
-rustls, etc.) and use it when constructing a `BaseSealClient`. No other HTTP
-methods are needed—the Seal key servers only expect `POST` requests.
+Seal key servers only expect HTTP `POST` requests, so you do not need anything
+else.
 
 ## Custom caching
 
-Caches implement [`SealCache`](../../src/cache.rs). The core method is
-`try_get_with`, which either returns an existing value or executes the provided
+To plug in your own cache, implement [`SealCache`](../../src/cache.rs). The key
+method, `try_get_with`, either returns a cached value or runs the provided
 future to populate the cache:
 
 ```rust
-use std::sync::Arc;
 use std::future::Future;
+use std::sync::Arc;
 
 async fn try_get_with<Fut, Error>(
     &self,
@@ -138,25 +137,24 @@ where
     Error: Send + Sync + 'static;
 ```
 
-When writing your own cache layer, add request coalescing if possible so multiple
-identical misses take the same in-flight future. That helps avoid hammering the
-Seal HTTP endpoints or the Sui RPC and keeps you under rate limits.
+Whenever possible, add request coalescing so you collapse duplicate misses into
+one in-flight future. This reduces unnecessary parallel calls, keeps you away
+from Seal server rate limits, and lightens the load on Sui RPC endpoints.
 
 ## Error handling strategies
 
-All public async helpers return either `Result<_, SealClientError>` or an
-`anyhow::Result<_>` inside tests/examples. In both cases the `?` operator is
-available, so you can bubble up errors directly or wrap them in your own enums
-if you prefer more specific handling.
+Public helpers return `Result<_, SealClientError>`. Examples and tests sometimes
+use `anyhow::Result<_>`. Both styles support the `?` operator, so you can bubble
+errors up or wrap them in your own enums for richer diagnostics.
 
 ## Deployment considerations
 
-- **Feature gating**: disable the `default` feature set and re-enable only what
-  you need (e.g. `--no-default-features --features client,moka-client` when you
-  want `SealClientMokaCache`).
-- **Parallel behavior**: encrypt/decrypt helpers issue concurrent requests, so
-  monitor key-server and RPC quotas. Custom caches and coalescing strategies can
-  help keep load stable.
-- **Recovery keys**: decide up front whether to store the recovery key returned
-  from encrypt helpers. Dropping it eliminates an authority-level backdoor;
-  storing it gives you an emergency escape hatch if key servers go offline.
+- **Feature gating**: Disable the default feature set when you want a custom
+  stack, then re-enable only what you need (for example,
+  `--no-default-features --features client,moka-client`).
+- **Parallel behavior**: Encrypt and decrypt helpers send requests in parallel.
+  Keep an eye on quotas for key servers and Sui RPC. Caches plus coalescing help
+  control the traffic.
+- **Recovery keys**: Decide whether to store the `[u8; 32]` recovery key that
+  encrypt helpers return. Dropping it removes a potential backdoor. Storing it
+  gives you an emergency path if key servers become unavailable.

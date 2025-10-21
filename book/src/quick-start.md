@@ -1,8 +1,8 @@
 # Quick Start
 
-This walkthrough assumes you are using the crate with its default feature set,
-which wires in the `SealClient` specialization (wrapping `sui_sdk::SuiClient`,
-`reqwest`, and no-op caches).
+This guide uses the crate with the default features. In this mode the
+`SealClient` specialization is active, combining `sui_sdk::SuiClient`,
+`reqwest`, and the no-op cache adapters.
 
 ## Install
 
@@ -13,25 +13,22 @@ Add the crate to your project:
 seal-sdk-rs = "0.0.1"
 ```
 
-> **Info:** The examples below construct a `WalletContext` from a standard Sui
-> CLI config (`WalletContext::new("<path to the config file>")`).
-> 
-> This is convenient but not mandatory—any signer that implements the crate's `Signer`
-> trait can power `SessionKey::new`, so you can bring your own signing logic if
-> desired.
+> **Info:** The examples build a `WalletContext` from a normal Sui CLI config
+> (`WalletContext::new("<path to the config file>")`). This approach is easy, but
+> not required. Any signer that implements the crate's `Signer` trait can call
+> `SessionKey::new`, so you can bring your own signing logic if you prefer.
 
 ## Example setup
 
-The snippets below follow the same flow as the integration tests but are pared
-down for clarity. Both examples share the same inputs:
+The snippets follow the flow of the integration tests with fewer moving parts.
+Both examples rely on the same inputs:
 
-- A single key server identified by `setup.key_server_id`.
+- One key server identified by `setup.key_server_id`.
 - A Seal package deployed at `setup.approve_package_id`.
-- A wallet context able to sign personal messages using
-  `WalletContext::new("<path to the config file>")`.
+- A wallet context that can sign personal messages.
 
-All helpers return `Result<_, SealClientError>`, letting the `?` operator bubble
-any issue up.
+All helpers return `Result<_, SealClientError>`, so the `?` operator propagates
+any failure.
 
 ### Encrypting a string
 
@@ -70,12 +67,10 @@ async fn encrypt_message(
 
 ### Decrypting the ciphertext
 
-We assume the package deployed at `setup.approve_package_id` exposes a `wildcard`
-module with a `seal_approve` function that always authorizes the `my_id`
-payload.
-
-Using the `EncryptedObject` returned by `encrypt_message`, the snippet
-below builds the approval transaction and recovers the original string.
+Assume the package at `setup.approve_package_id` contains a `wildcard` module
+with a `seal_approve` function that approves requests for `my_id`. Use the
+`EncryptedObject` returned by `encrypt_message` to rebuild the approval
+transaction and recover the original string.
 
 ```rust,no_run
 use seal_sdk_rs::error::SealClientError;
@@ -111,7 +106,6 @@ async fn decrypt_message(
 
     let mut builder = ProgrammableTransactionBuilder::new();
     let id_arg = builder.pure(b"my_id".to_vec())?;
-    
     builder.programmable_move_call(
         setup.approve_package_id.into(),
         Identifier::from_str("wildcard")?,
@@ -119,7 +113,6 @@ async fn decrypt_message(
         vec![],
         vec![id_arg],
     );
-    
     let approve_ptb = builder.finish();
 
     let plaintext = client
@@ -131,7 +124,6 @@ async fn decrypt_message(
         .await?;
 
     assert_eq!(plaintext, b"hello from seal");
-    
     Ok(())
 }
 ```

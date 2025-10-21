@@ -1,24 +1,22 @@
 # Introduction
 
-The `seal-sdk-rs` crate delivers a Sui framework–agnostic client for the Seal
-encryption system. It puts developer experience first, exposing safe defaults
-while keeping every layer — HTTP transport, Sui client, signing, and caching —
-open for custom logic. Whether you want to plug in the fully-featured
-`sui_sdk` stack or wire a lightweight experimental client, the SDK keeps the
-abstractions narrow so you can tailor how requests are built, signed, cached
-and executed.
+`seal-sdk-rs` gives you a Seal client that works with any Sui framework. The
+crate focuses on developer experience. It ships safe defaults, but you can
+replace every layer: HTTP transport, Sui client, signer, and cache. Use the
+full `sui_sdk` stack or a lighter experimental client. The API stays simple so
+you can control how requests are built, signed, cached, and executed.
 
-Key characteristics:
+Key features:
 
-- **Modular composition**: `BaseSealClient` is a generic over the HTTP client,
-  Sui RPC adapter, caches, and error types, so you can mix and match
+- **Modular design**: `BaseSealClient` accepts generic types for the HTTP
+  client, Sui RPC adapter, caches, and error types. You can mix and match
   implementations without forking the crate.
-- **Pragmatic defaults**: the `SealClient` specializations pair
-  `sui_sdk::SuiClient`, `reqwest`, and cache strategies (including `moka`) so
-  most applications can get started immediately.
-- **Parallel efficiency**: batch helpers (e.g. `encrypt_multiple_bytes`) reuse
-  fetched metadata and execute remote calls concurrently when possible, keeping
-  round trips to Mysten key servers short.
-- **Ergonomic helpers**: conversion traits, generic object IDs/addresses, and
-  BCS serializers keep data handling easy, while still allowing advanced users
-  to manage serialization manually when required.
+- **Helpful defaults**: The provided `SealClient` variants combine
+  `sui_sdk::SuiClient`, `reqwest`, and different cache strategies (including
+  `moka`) so most projects can start quickly.
+- **Parallel performance**: Batch helpers such as `encrypt_multiple_bytes`
+  reuse fetched metadata and run remote calls in parallel when possible. This
+  keeps round trips to Mysten key servers short.
+- **Friendly helpers**: Conversion traits, generic object IDs/addresses, and
+  BCS serializers simplify data handling. Advanced users can still manage
+  serialization manually when they need to.

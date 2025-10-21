@@ -1,13 +1,13 @@
 # Concepts & Architecture
 
-This chapter explains the moving parts behind `seal-sdk-rs`: how `BaseSealClient`
-is composed, what the specializations wire together, and the operational
-considerations you should keep in mind when shipping to production.
+This chapter explains how the SDK fits together: what powers `BaseSealClient`,
+how the ready-made specializations behave, and which operational details matter
+when you run the client in production.
 
 ## BaseSealClient
 
-`BaseSealClient` (see `src/base_client.rs`) is the generic heart of the SDK. It
-has six type parameters covering
+`BaseSealClient` (see `src/base_client.rs`) is the generic core. It exposes six
+type parameters that let you decide which pieces to plug in:
 
 - key-server info cache implementation
 - derived-keys cache implementation
@@ -16,106 +16,94 @@ has six type parameters covering
 - HTTP error type
 - HTTP client implementation
 
-Any type satisfying the relevant traits can be used. The default crate exports
-traits for each layer:
+You can supply any types that implement the required traits:
 
-- [`SealCache`](../../src/cache.rs) – async cache API with a single
-  `try_get_with` method.
-- [`SuiClient`](../../src/sui_client.rs) – minimal RPC surface required to fetch
-  key-server metadata.
-- [`HttpClient`](../../src/http_client.rs) – simple `POST` wrapper for talking to
-  Seal key servers.
+- [`SealCache`](../../src/cache.rs) defines a simple async cache API.
+- [`SuiClient`](../../src/sui_client.rs) outlines the Sui RPC calls the client
+  needs.
+- [`HttpClient`](../../src/http_client.rs) asks for a single `post` method to
+  talk to Seal key servers.
 
-Because the generic signature never mentions concrete types, projects can swap
-out parts as needed (e.g. use a mock HTTP client in tests or a custom cache with
-size limits).
+Because the generics stay abstract, you can swap components without editing the
+rest of the crate—use a mock HTTP client in tests, replace the cache with a
+shared service, or point to a different Sui SDK version.
 
 ## Specializations
 
-The crate provides several type aliases in `src/native_sui_sdk/client` that wire
-commonly-used components together:
+`src/native_sui_sdk/client` offers ready-to-use type aliases:
 
-- **`SealClient`** – the default specialization using
-  `sui_sdk::SuiClient`, `reqwest::Client`, and the `NoCache` cache. Enabled by
-  default via the `client` and `native-sui-sdk` feature flags.
-- **`SealClientLeakingCache`** – same as `SealClient` but with in-memory
-  `HashMap` caches wrapped in `Arc<Mutex<_>>`. The caches never evict, so use it
-  only for short-lived tooling.
-- **`SealClientMokaCache`** – feature-gated behind `moka-client`. Uses
-  `moka::future::Cache` for both caches, giving you configurable eviction logic
-  for long-running services.
+- **`SealClient`** uses `sui_sdk::SuiClient`, `reqwest::Client`, and the `NoCache`
+  adapters. The `client` and `native-sui-sdk` features enable it by default.
+- **`SealClientLeakingCache`** adds `Arc<Mutex<HashMap<...>>>` caches. These
+  caches never evict, so use them only for short-lived tools.
+- **`SealClientMokaCache`** (behind the `moka-client` feature) relies on
+  `moka::future::Cache`, giving you configurable eviction for long-lived
+  services.
 
-When customizing, you can also supply your own type alias, choosing whichever
-Sui client, HTTP client, and caches make sense for your environment.
+If you need something else, create your own alias that wires the right HTTP
+client, Sui client, and caches into `BaseSealClient`.
 
 ## Caching strategies
 
-Caching is optional. The two cache traits exist to avoid repeated RPC lookups
-and key fetches:
+Caching is optional but useful. The client can cache two kinds of data:
 
-- The *key-server info cache* stores object metadata fetched via Sui RPC.
-- The *derived-keys cache* stores the results of key reconstruction from the
-  Seal key servers.
+- key-server metadata fetched from Sui
+- derived keys fetched from the Seal servers
 
-`NoCache` is the simplest adapter and simply forwards every miss. The `HashMap`
-and `moka` adapters show how to layer in memory-backed caches when you want to
-cache results within a process. You can plug in any other cache (redis, memcache
-client, etc.) by implementing `SealCache`.
+`NoCache` skips caching. The `HashMap` and `moka` adapters show how to keep
+results in memory. To integrate a different cache (Redis, a database, etc.),
+implement `SealCache`.
 
 ## Session keys (JWT analogy)
 
-`SessionKey` lives in `src/session_key.rs`. Instead of forcing a wallet to sign
-authentication payloads for every decryption request, the SDK lets you mint a
-short-lived key that behaves like a JWT token:
+`SessionKey` lives in `src/session_key.rs`. Instead of signing every decrypt
+request with a wallet, you sign once to mint a short-lived key. Think of it like
+a JWT:
 
-1. The wallet signs a capability once (using any `Signer` implementation).
-2. During the TTL window, decrypt calls present the session key to the key
-   servers, avoiding repeated signatures.
+1. A signer that implements `Signer` creates the session key.
+2. During the TTL window, decrypt calls use that key without asking the wallet
+   again.
 
-Treat the session key like a bearer token: store it securely and drop it when it
-expires or when you no longer need to issue decrypt calls.
+Handle the session key like a bearer token: keep it safe in memory and drop it
+when you no longer need it.
 
 ## Recovery keys and operational security
 
-Every encrypt helper returns a tuple `(EncryptedObject, [u8; 32])`. The second
-value is an emergency recovery key that allows decryption even if key servers go
-offline. Keep these keys somewhere safe if you want a break-glass option; drop
-or wipe them immediately if you do *not* want any backdoor that bypasses key
-server quorum.
+Every encrypt helper returns `(EncryptedObject, [u8; 32])`. The second value is
+an emergency recovery key. Store it if you want a break-glass option when key
+servers go offline. Drop it if you never want a single authority to decrypt all
+payloads without the key-server quorum.
 
 ## Supported Sui SDKs and bridging types
 
-Two Sui SDK ecosystems exist today:
+Today you can choose between two Sui SDK families:
 
-- The monorepo at `MystenLabs/sui`, which ships the mature, feature-rich client
-  but pulls in a large dependency graph and build toolchain.
-- The lighter `MystenLabs/sui-rust-sdk`, currently experimental but designed to
-  be leaner.
+- `MystenLabs/sui` is mature but heavy. It pulls in a large dependency graph and
+  build toolchain.
+- `MystenLabs/sui-rust-sdk` is lightweight but still experimental.
 
-`seal-sdk-rs` anticipates both worlds. Bridging types in `src/generic_types.rs`
-(`ObjectID`, `SuiAddress`) and the
-`BCSSerializableProgrammableTransaction` trait allow either SDK’s types to pass
-through the same API surface. Conversions exist both ways and everything stays
-`serde`-friendly.
+`seal-sdk-rs` already bridges both worlds. `src/generic_types.rs` defines
+`ObjectID` and `SuiAddress`, and the
+`BCSSerializableProgrammableTransaction` trait hides differences between the SDKs.
+Conversions run in both directions and all types support `serde`.
 
-Today’s built-in specializations (`SealClient`, `SealClientLeakingCache`, and
-`SealClientMokaCache`) target the `MystenLabs/sui` SDK and speak JSON-RPC. gRPC
-support is planned as the upstream JSON-RPC endpoints move deeper into their
-deprecation cycle. Once the lightweight SDK stabilizes, new specializations can
-slot in without architectural changes.
+The built-in specializations (`SealClient`, `SealClientLeakingCache`,
+`SealClientMokaCache`) currently target `MystenLabs/sui` and use JSON-RPC. gRPC
+support is on the roadmap because the JSON-RPC endpoints have started their
+phase-out. When the lightweight SDK stabilizes, new specializations can land
+without changing the overall design.
 
 ## Feature flags overview
 
-`Cargo.toml` defines the following public flags:
+`Cargo.toml` exposes several public features:
 
 - `default` = `client`, `native-tls`, `native-sui-sdk`
-- `client` – enables `reqwest` + `http` abstractions, required for
-  `SealClient`.
-- `native-tls` – configures `reqwest` to use native TLS. Switch to `rustls` by
-  disabling defaults and enabling the relevant `reqwest` feature manually.
-- `native-sui-sdk` – pulls in `sui_sdk`, `sui_types`, `sui_keys`, and
-  `shared_crypto`, plus Sui-specific adapters.
-- `moka-client` – adds the `moka` cache specialization (`SealClientMokaCache`).
+- `client` enables the HTTP layer (`reqwest` + `http`).
+- `native-tls` switches `reqwest` to native TLS. Disable it if you want to opt
+  into `rustls` manually.
+- `native-sui-sdk` pulls in `sui_sdk`, `sui_types`, `sui_keys`, and
+  `shared_crypto`, plus the Sui-specific adapters.
+- `moka-client` adds the `moka` cache specialization.
 
-Disable defaults if you want to bring entirely custom implementations; re-enable
+Disable the defaults if you want to bring your own implementations and re-enable
 only the pieces you need.
