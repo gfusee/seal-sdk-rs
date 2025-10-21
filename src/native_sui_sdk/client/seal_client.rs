@@ -10,7 +10,7 @@ use tokio::sync::Mutex;
 
 pub type SealClient = BaseSealClient<
     NoCache<KeyServerInfoCacheKey, KeyServerInfo>,
-    NoCache<DerivedKeyCacheKey, Vec<DerivedKeys>>,
+    NoCache<DerivedKeyCacheKey, DerivedKeys>,
     <sui_sdk::SuiClient as SuiClient>::Error,
     sui_sdk::SuiClient,
     <Client as HttpClient>::PostError,
@@ -25,7 +25,7 @@ impl SealClient {
 
 pub type SealClientLeakingCache = BaseSealClient<
     Arc<Mutex<HashMap<KeyServerInfoCacheKey, KeyServerInfo>>>,
-    Arc<Mutex<HashMap<DerivedKeyCacheKey, Vec<DerivedKeys>>>>,
+    Arc<Mutex<HashMap<DerivedKeyCacheKey, DerivedKeys>>>,
     <sui_sdk::SuiClient as SuiClient>::Error,
     sui_sdk::SuiClient,
     <Client as HttpClient>::PostError,

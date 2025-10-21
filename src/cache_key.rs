@@ -14,15 +14,15 @@ impl KeyServerInfoCacheKey {
 #[derive(PartialEq, Eq, Hash, Clone)]
 pub struct DerivedKeyCacheKey {
     request: Vec<u8>,
-    server_ids: Vec<ObjectID>,
+    server_id: ObjectID,
     threshold: u8,
 }
 
 impl DerivedKeyCacheKey {
-    pub fn new(request: Vec<u8>, server_ids: Vec<ObjectID>, threshold: u8) -> Self {
+    pub fn new(request: Vec<u8>, server_id: ObjectID, threshold: u8) -> Self {
         Self {
             request,
-            server_ids,
+            server_id,
             threshold,
         }
     }

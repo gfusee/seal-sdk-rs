@@ -31,7 +31,7 @@ pub type DerivedKeys = (ObjectID, FetchKeyResponse);
 pub struct BaseSealClient<KeyServerInfoCache, DerivedKeysCache, SuiError, Sui, HttpError, Http>
 where
     KeyServerInfoCache: SealCache<Key = KeyServerInfoCacheKey, Value = KeyServerInfo>,
-    DerivedKeysCache: SealCache<Key = DerivedKeyCacheKey, Value = Vec<DerivedKeys>>,
+    DerivedKeysCache: SealCache<Key = DerivedKeyCacheKey, Value = DerivedKeys>,
     SealClientError: From<SuiError>,
     SuiError: Send + Sync + Display + 'static,
     Sui: SuiClient<Error = SuiError>,
@@ -48,7 +48,7 @@ impl<KeyServerInfoCache, DerivedKeysCache, SuiError, Sui, HttpError, Http>
     BaseSealClient<KeyServerInfoCache, DerivedKeysCache, SuiError, Sui, HttpError, Http>
 where
     KeyServerInfoCache: SealCache<Key = KeyServerInfoCacheKey, Value = KeyServerInfo>,
-    DerivedKeysCache: SealCache<Key = DerivedKeyCacheKey, Value = Vec<DerivedKeys>>,
+    DerivedKeysCache: SealCache<Key = DerivedKeyCacheKey, Value = DerivedKeys>,
     SealClientError: From<SuiError>,
     SuiError: Send + Sync + Display + 'static,
     Sui: SuiClient<Error = SuiError>,
@@ -238,15 +238,11 @@ where
     ) -> Result<Vec<DerivedKeys>, SealClientError> {
         let request_json = request.to_json_string()?;
 
-        let server_ids: Vec<ObjectID> =
-            key_servers_info.iter().map(|info| info.object_id).collect();
+        let mut seal_responses_futures = Vec::new();
+        for server in key_servers_info.iter() {
+            let request_bytes = bcs::to_bytes(&request)?;
 
-        let cache_key =
-            DerivedKeyCacheKey::new(request_json.clone().into_bytes(), server_ids, threshold);
-
-        let cache_future = async {
-            let mut seal_responses: Vec<DerivedKeys> = Vec::new();
-            for server in key_servers_info.iter() {
+            let response_future = async {
                 let mut headers = HashMap::new();
 
                 headers.insert("Client-Sdk-Type".to_string(), "rust".to_string());
@@ -267,31 +263,41 @@ where
                     });
                 }
 
-                let response: FetchKeyResponse = serde_json::from_str(&response.text)?;
+                let seal_response: FetchKeyResponse = serde_json::from_str(&response.text)?;
 
-                seal_responses.push((server.object_id, response));
+                Ok::<_, SealClientError>((server.object_id, seal_response))
+            };
 
-                if seal_responses.len() >= threshold as usize {
-                    break;
-                }
-            }
+            let cache_key = DerivedKeyCacheKey::new(
+                request_bytes,
+                server.object_id,
+                threshold
+            );
 
-            let seal_responses_len = seal_responses.len();
+            seal_responses_futures.push(
+                self.derived_key_cache.try_get_with(
+                    cache_key,
+                    response_future
+                )
+            );
+        }
 
-            if seal_responses_len < threshold as usize {
-                return Err(SealClientError::InsufficientKeys {
-                    received: seal_responses_len,
-                    threshold,
-                });
-            }
-
-            Ok(seal_responses)
-        };
-
-        self.derived_key_cache
-            .try_get_with(cache_key, cache_future)
+        let seal_responses: Vec<DerivedKeys> = join_all(seal_responses_futures)
             .await
-            .map_err(unwrap_cache_error)
+            .into_iter()
+            .filter_map(|e| e.ok())
+            .collect();
+
+        let seal_responses_len = seal_responses.len();
+
+        if seal_responses_len < threshold as usize {
+            return Err(SealClientError::InsufficientKeys {
+                received: seal_responses_len,
+                threshold,
+            });
+        }
+
+        Ok(seal_responses)
     }
 
     fn decode_public_key(&self, info: &KeyServerInfo) -> Result<G2Element, SealClientError> {

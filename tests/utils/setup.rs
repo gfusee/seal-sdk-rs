@@ -1,13 +1,12 @@
-use anyhow::bail;
+use anyhow::anyhow;
 use base64::Engine;
-use futures::FutureExt;
 use reqwest::Client;
 use seal_sdk_rs::generic_types::{ObjectID, SuiAddress};
 use serde::Deserialize;
 use serde_json::json;
+use std::convert::TryInto;
 use std::sync::{Arc, Mutex, MutexGuard};
-use std::time::{Duration, SystemTime, UNIX_EPOCH};
-use std::{env, fs};
+use std::time::Duration;
 use sui_json_rpc_types::SuiTransactionBlockEffectsAPI;
 use sui_keys::keystore::{InMemKeystore, Keystore};
 use sui_sdk::rpc_types::SuiTransactionBlockResponseOptions;
@@ -27,21 +26,45 @@ pub const APPROVE_PACKAGE: [&str; 1] = [
     "oRzrCwYAAAAGAQACAwIFBQcEBwsWCCEgDEEHAAEAAAABAAEKAgAMc2VhbF9hcHByb3ZlCHdpbGRjYXJkAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAAQECAA==",
 ];
 
+pub const SEAL_SERVER_COUNT: usize = 3;
+
 pub struct Setup {
     pub rpc_url: String,
     pub approve_package_id: ObjectID,
     pub approve_package_deployer: WalletContext,
-    pub seal_package_id: ObjectID,
-    pub key_server_object_id: ObjectID,
-    pub public_key: [u8; 96],
     pub localnet_container: ContainerAsync<GenericImage>,
+    pub seal_instances: [SealInstance; SEAL_SERVER_COUNT],
+    pub extra_seal_servers_count: usize,
+}
+
+impl Setup {
+    pub async fn add_new_seal_servers<const N: usize>(&mut self) -> anyhow::Result<[SealInstance; N]> {
+        let start_index = SEAL_SERVER_COUNT + self.extra_seal_servers_count + N;
+
+        let mut result = Vec::with_capacity(N);
+        for index in start_index..start_index + N {
+            result.push(create_seal_instance(index).await?);
+        }
+
+        self.extra_seal_servers_count += N;
+
+        Ok(result.try_into().ok().unwrap())
+    }
+}
+
+pub struct SealInstance {
     pub seal_container: ContainerAsync<GenericImage>,
+    pub key_server_id: ObjectID,
+    pub seal_package_id: ObjectID,
+    pub seal_server_url: String,
+    pub public_key: [u8; 96],
 }
 
 #[derive(Deserialize, Debug)]
 struct SealInfo {
     seal_package_id: String,
-    key_server_object_id: String,
+    #[serde(rename = "key_server_object_id")]
+    key_server_package_id: String,
     public_key: String,
 }
 
@@ -100,32 +123,66 @@ pub async fn init_setup() -> anyhow::Result<Setup> {
         .start()
         .await?;
 
-    let temp_dir_name = format!(
-        "container-{}",
-        SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .unwrap()
-            .as_millis()
-    );
+    let seal_instances_vec = {
+        let mut instances = Vec::with_capacity(SEAL_SERVER_COUNT);
+        for index in 0..SEAL_SERVER_COUNT {
+            instances.push(create_seal_instance(index).await?);
+        }
+        instances
+    };
 
-    let mut temp_path = env::temp_dir();
-    temp_path.push(&temp_dir_name);
-    fs::create_dir_all(&temp_path).expect("Failed to create temp directory");
+    let seal_instances: [SealInstance; SEAL_SERVER_COUNT] =
+        seal_instances_vec
+            .try_into()
+            .map_err(|instances: Vec<SealInstance>| {
+                anyhow!(
+                    "Expected {SEAL_SERVER_COUNT} seal instances, got {}",
+                    instances.len()
+                )
+            })?;
 
+    let rpc_external_port = localnet.get_host_port_ipv4(9000).await?;
+    let rpc_external_url = format!("http://localhost:{rpc_external_port}");
+
+    let faucet_external_port = localnet.get_host_port_ipv4(9123).await?;
+    let faucet_external_url = format!("http://localhost:{faucet_external_port}");
+
+    let mut deployer_wallet = setup_deployment_wallet();
+    let deployer_address = deployer_wallet.active_address()?.into();
+
+    faucet(&faucet_external_url, &deployer_address).await?;
+
+    let approve_package_id =
+        deploy_approve_package(&rpc_external_url, &mut deployer_wallet).await?;
+
+    let setup = Setup {
+        rpc_url: rpc_external_url,
+        approve_package_id,
+        approve_package_deployer: deployer_wallet,
+        localnet_container: localnet,
+        seal_instances,
+        extra_seal_servers_count: 0,
+    };
+
+    Ok(setup)
+}
+
+async fn create_seal_instance(index: usize) -> anyhow::Result<SealInstance> {
     let free_port = find_free_port().await?;
 
     let seal_server_external_url = format!("http://localhost:{free_port}");
+    let container_name = format!("{SEAL_SERVER_CONTAINER_NAME}-{index}");
 
     let seal = GenericImage::new(SEAL_SERVER_IMAGE_NAME, SEAL_SERVER_IMAGE_TAG)
-        .with_mapped_port(free_port, ContainerPort::Tcp(2024))
+        .with_mapped_port(free_port, ContainerPort::Tcp(SEAL_SERVER_INTERNAL_PORT))
         .with_network(DOCKER_NETWORK)
-        .with_container_name(SEAL_SERVER_CONTAINER_NAME)
+        .with_container_name(container_name)
         .with_env_var("NODE_URL", format!("http://{LOCALNET_CONTAINER_NAME}:9000"))
         .with_env_var(
             "FAUCET_URL",
             format!("http://{LOCALNET_CONTAINER_NAME}:9123"),
         )
-        .with_env_var("SEAL_SERVER_URL", seal_server_external_url)
+        .with_env_var("SEAL_SERVER_URL", seal_server_external_url.clone())
         .start()
         .await?;
 
@@ -142,43 +199,31 @@ pub async fn init_setup() -> anyhow::Result<Setup> {
 
     reader.read_to_string(&mut stdout).await?;
 
-    let Ok(info) = serde_json::from_str::<SealInfo>(&stdout) else {
-        bail!("Cannot get seal info")
-    };
+    let info: SealInfo =
+        serde_json::from_str(&stdout).map_err(|_| anyhow!("Cannot get seal info"))?;
 
-    let rpc_external_port = localnet.get_host_port_ipv4(9000).await?;
-    let rpc_external_url = format!("http://localhost:{rpc_external_port}");
-
-    let faucet_external_port = localnet.get_host_port_ipv4(9123).await?;
-    let faucet_external_url = format!("http://localhost:{faucet_external_port}");
-
-    let mut deployer_wallet = setup_deployment_wallet();
-    let deployer_address = deployer_wallet.active_address()?.into();
-
-    faucet(&faucet_external_url, &deployer_address).await?;
-
-    let approve_package_id =
-        deploy_approve_package(&rpc_external_url, &mut deployer_wallet).await?;
-
-    let public_key_hex = info
-        .public_key
-        .strip_prefix("0x")
-        .unwrap_or(&info.public_key);
-    println!("{}", hex::decode(public_key_hex)?.len());
-    let public_key = <[u8; 96]>::try_from(hex::decode(public_key_hex)?).unwrap();
-
-    let setup = Setup {
-        rpc_url: rpc_external_url,
-        approve_package_id,
-        approve_package_deployer: deployer_wallet,
-        seal_package_id: info.seal_package_id.parse()?,
-        key_server_object_id: info.key_server_object_id.parse()?,
+    let SealInfo {
+        seal_package_id,
+        key_server_package_id,
         public_key,
-        localnet_container: localnet,
-        seal_container: seal,
-    };
+    } = info;
 
-    Ok(setup)
+    let public_key_hex = public_key.strip_prefix("0x").unwrap_or(&public_key);
+    let public_key_bytes = hex::decode(public_key_hex)?;
+    let public_key: [u8; 96] = public_key_bytes.try_into().map_err(|bytes: Vec<u8>| {
+        anyhow!(
+            "Invalid public key length: expected 96 bytes, got {}",
+            bytes.len()
+        )
+    })?;
+
+    Ok(SealInstance {
+        seal_container: seal,
+        key_server_id: key_server_package_id.parse()?,
+        seal_package_id: seal_package_id.parse()?,
+        seal_server_url: seal_server_external_url,
+        public_key,
+    })
 }
 
 async fn wait_for_seal_server(port: u16) {
