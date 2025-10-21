@@ -9,10 +9,10 @@ RUN apt-get update && apt-get install -y \
     git \
     && rm -rf /var/lib/apt/lists/*
 
-COPY --from=sui-binary /usr/local/bin/sui /usr/local/bin/sui
-COPY --from=seal-binary /seal /seal
-COPY --from=seal-binary /usr/local/bin/seal-cli /usr/local/bin/seal-cli
-COPY --from=seal-binary /usr/local/bin/key-server /usr/local/bin/key-server
+COPY --from=seal-sdk-rs-sui-bin /usr/local/bin/sui /usr/local/bin/sui
+COPY --from=seal-sdk-rs-seal-bin /seal /seal
+COPY --from=seal-sdk-rs-seal-bin /usr/local/bin/seal-cli /usr/local/bin/seal-cli
+COPY --from=seal-sdk-rs-seal-bin /usr/local/bin/key-server /usr/local/bin/key-server
 COPY run.sh run.sh
 COPY wait_for_localnet.sh wait_for_localnet.sh
 COPY empty_sui_config.yaml /root/.sui/sui_config/client.yaml

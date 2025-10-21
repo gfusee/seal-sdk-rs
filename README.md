@@ -87,6 +87,12 @@ For a full walkthrough, open the docs in `book/` (run `mdbook serve book`).
 - Bridging traits (`ObjectID`, `SuiAddress`,
   `BCSSerializableProgrammableTransaction`) let you mix Sui SDK ecosystems.
 
+## Testing strategy
+
+Integration tests spin up a Sui localnet and a flexible number of Seal servers.
+Some scenarios crash servers on purpose so the suite covers failure paths and
+recovery behaviour.
+
 ## Bringing your own components
 
 - Implement [`SuiClient`](src/sui_client.rs) to target a different Sui SDK

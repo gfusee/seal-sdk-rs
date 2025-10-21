@@ -7,7 +7,7 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy the compiled binary from the builder
-COPY --from=sui-binary /usr/local/bin/sui /usr/local/bin/sui
+COPY --from=seal-sdk-rs-sui-bin /usr/local/bin/sui /usr/local/bin/sui
 
 ENTRYPOINT ["sui", "start", "--with-faucet", "--force-regenesis"]
 
