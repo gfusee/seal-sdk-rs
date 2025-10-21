@@ -1,3 +1,9 @@
+//! Cryptographic helpers primarily derived from the `MystenLabs/seal` repository.
+//!
+//! The code is mirrored here to give the SDK greater control over types and lifetimes
+//! without patching the upstream crate, while staying faithful to the original
+//! implementation.
+
 use crate::generic_types::{ObjectID, SuiAddress};
 use fastcrypto::ed25519::{Ed25519PublicKey, Ed25519Signature};
 use fastcrypto::encoding::{Encoding, Hex};
@@ -132,7 +138,6 @@ pub struct FetchKeyResponse {
     pub decryption_keys: Vec<DecryptionKey>,
 }
 
-// This function comes from the seal repo, it avoids recompiling the entire seal-sdk crate
 pub fn seal_decrypt_all_objects(
     enc_secret: &SecretKey<fastcrypto::groups::bls12381::G1Element>,
     seal_responses: &[(ObjectID, FetchKeyResponse)],
