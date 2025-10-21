@@ -6,6 +6,15 @@ use std::marker::PhantomData;
 use std::sync::Arc;
 use tokio::sync::Mutex;
 
+/// Minimal async-friendly cache abstraction used by [`BaseSealClient`](crate::base_client::BaseSealClient).
+///
+/// Implementors can decide how to memoize expensive fetches executed by the seal client.
+/// This crate ships a "do nothing" implementation via [`NoCache`] and, when the `moka`
+/// feature is enabled (via the `moka-client` feature flag), a
+/// [Moka-powered](https://docs.rs/moka) adapter in
+/// [`native_sui_sdk::client::seal_client::moka`](crate::native_sui_sdk::client::seal_client::moka).
+/// The `SealClient` specializations demonstrate how these caches are wired into higher-level
+/// clients.
 #[async_trait]
 pub trait SealCache: Send + Sync {
     type Key;

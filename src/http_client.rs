@@ -14,6 +14,11 @@ impl PostResponse {
     }
 }
 
+/// Thin wrapper around the HTTP capabilities required by the seal client.
+///
+/// Only simple POST semantics are needed to talk to key servers. When the crate's
+/// `client` feature is enabled (the default), we provide an adapter for `reqwest::Client`
+/// in [`reqwest::client`](crate::reqwest::client).
 #[async_trait]
 pub trait HttpClient: Sync {
     type PostError;
