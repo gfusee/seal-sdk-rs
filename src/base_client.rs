@@ -69,6 +69,10 @@ where
         }
     }
 
+    /// Convenience wrapper around [`encrypt_bytes`] that accepts a serializable value.
+    ///
+    /// The payload is converted to BCS and encrypted with the provided package, identifier,
+    /// key servers, and threshold. Use this when working with a single BCS-serializable item.
     pub async fn encrypt<T, ID1, ID2>(
         &self,
         package_id: ID1,
@@ -87,6 +91,9 @@ where
             .await
     }
 
+    /// Convenience wrapper around [`encrypt_multiple_bytes`] for serializable values.
+    ///
+    /// Every item is serialized to BCS before delegating to [`encrypt_multiple_bytes`].
     pub async fn encrypt_multiple<T, ID1, ID2>(
         &self,
         package_id: ID1,
@@ -109,6 +116,10 @@ where
             .await
     }
 
+    /// Encrypt a single byte payload, delegating to [`encrypt_multiple_bytes`].
+    ///
+    /// Internally the payload is wrapped in a one-element `Vec` so that the heavier-weight
+    /// logic in [`encrypt_multiple_bytes`] is reused.
     pub async fn encrypt_bytes<ID1, ID2>(
         &self,
         package_id: ID1,
@@ -131,6 +142,10 @@ where
         Ok(result)
     }
 
+    /// Encrypt multiple byte payloads with shared key server metadata.
+    ///
+    /// Fetches key-server information once and reuses it to encrypt every entry in `data`,
+    /// which is more efficient than issuing repeated [`encrypt_bytes`] calls.
     pub async fn encrypt_multiple_bytes<ID1, ID2>(
         &self,
         package_id: ID1,

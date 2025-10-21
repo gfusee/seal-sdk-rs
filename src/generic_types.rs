@@ -4,6 +4,12 @@ use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::fmt::Display;
 use std::str::FromStr;
 
+/// Wrapper bridging object identifiers across the Sui SDKs.
+///
+/// The project supports both Mysten's full `sui` repository SDK and the lighter
+/// `sui-rust-sdk`. `ObjectID` provides conversions and serde glue so either SDK's
+/// object identifier types can be used interchangeably when interacting with the
+/// seal client APIs.
 #[derive(PartialEq, Eq, Hash, Debug, Copy, Clone)]
 pub struct ObjectID(pub [u8; 32]);
 
@@ -83,6 +89,10 @@ impl<'de> Deserialize<'de> for ObjectID {
     }
 }
 
+/// Wrapper bridging Sui account addresses between the two supported SDKs.
+///
+/// Together with [`ObjectID`], this type ensures the seal client can accept
+/// address values from either SDK without forcing a single dependency surface.
 #[derive(PartialEq, Eq, Hash, Debug, Copy, Clone)]
 pub struct SuiAddress(pub [u8; 32]);
 
@@ -128,6 +138,11 @@ impl<'de> Deserialize<'de> for SuiAddress {
     }
 }
 
+/// Bridge trait for programmable transaction types from the two Sui SDKs.
+///
+/// Implementing this allows seal client specializations to serialize either
+/// SDK's programmable transaction into BCS without caring about the concrete
+/// type.
 pub trait BCSSerializableProgrammableTransaction {
     fn to_bcs_bytes(&self) -> Result<Vec<u8>, SealClientError>;
 }
