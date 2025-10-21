@@ -3,6 +3,7 @@ name: Publish crate
 on:
   release:
     types: [created]
+  workflow_dispatch:
 
 env:
   CARGO_TERM_COLOR: always
@@ -14,10 +15,11 @@ jobs:
       contents: write
 
     steps:
-      - name: Checkout main
+      - name: Checkout release target
         uses: actions/checkout@v4
         with:
-          ref: main
+          ref: ${{ github.event.release.target_commitish }}
+          fetch-depth: 0
 
       - name: Configure git user
         run: |
