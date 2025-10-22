@@ -1,6 +1,6 @@
 # Seal Rust SDK
 
-A developer-friendly Rust client for the Mysten Seal encryption system. The
+A developer-friendly & framework-agnostic Rust client for the Mysten Seal encryption system. The
 crate works with any Sui setup: keep the default stack (`SealClient`) or swap in
 your own HTTP transport, Sui client, signer, and cache.
 
