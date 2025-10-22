@@ -25,6 +25,9 @@ jobs:
           toolchain: stable
           override: true
 
+      - name: Run fmt checks
+        run: cargo fmt --check
+
       - name: Run clippy (all targets, tests)
         run: cargo clippy --all-targets --all-features -- -D warnings
 
