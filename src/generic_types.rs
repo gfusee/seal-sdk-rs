@@ -112,7 +112,7 @@ pub struct SuiAddress(pub [u8; 32]);
 
 impl From<[u8; 32]> for SuiAddress {
     fn from(value: [u8; 32]) -> Self {
-        Self(value.into())
+        Self(value)
     }
 }
 

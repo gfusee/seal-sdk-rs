@@ -127,7 +127,7 @@ pub async fn setup() -> anyhow::Result<ArcSetup> {
             anyhow::Result::Ok(ArcSetup { inner })
         })
         .await
-        .map(Clone::clone)
+        .cloned()
 }
 
 pub async fn init_setup() -> anyhow::Result<Setup> {
@@ -298,7 +298,7 @@ async fn deploy_approve_package(
 
     let package_bytes = APPROVE_PACKAGE.map(|module_base64| {
         base64::engine::general_purpose::STANDARD
-            .decode(&module_base64)
+            .decode(module_base64)
             .unwrap()
     });
 
@@ -342,7 +342,7 @@ async fn deploy_approve_package(
         .effects
         .unwrap()
         .created()
-        .into_iter()
+        .iter()
         .find(|e| matches!(e.owner, Owner::Immutable))
         .unwrap()
         .reference

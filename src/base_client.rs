@@ -311,7 +311,7 @@ where
 
         let public_keys = IBEPublicKeys::BonehFranklinBLS12381(public_keys_g2);
 
-        let key_servers: Vec<ObjectID> = key_servers.into_iter().map(|e| e.into()).collect();
+        let key_servers: Vec<ObjectID> = key_servers.into_iter().collect();
 
         let mut results = Vec::with_capacity(data.len());
 
@@ -581,15 +581,13 @@ where
         let service_ids: Vec<ObjectID> = first_encrypted_object
             .services
             .iter()
-            .map(|(id, _)| (*id).into())
+            .map(|(id, _)| (*id))
             .collect();
 
         let key_server_info = self.fetch_key_server_info(service_ids).await?;
         let servers_public_keys_map = key_server_info
             .iter()
-            .map(|info| {
-                Ok::<_, SealClientError>((info.object_id.into(), self.decode_public_key(info)?))
-            })
+            .map(|info| Ok::<_, SealClientError>((info.object_id, self.decode_public_key(info)?)))
             .collect::<Result<Vec<_>, _>>()?
             .into_iter()
             .collect::<HashMap<_, _>>();
@@ -605,7 +603,7 @@ where
             )
             .await?
             .into_iter()
-            .map(|derived_key| (derived_key.0.into(), derived_key.1))
+            .map(|derived_key| (derived_key.0, derived_key.1))
             .collect::<Vec<_>>();
 
         seal_decrypt_all_objects(
@@ -642,7 +640,6 @@ where
             .await
             .into_iter()
             .collect::<Result<_, _>>()
-            .map_err(Into::into)
     }
 
     async fn fetch_derived_keys(

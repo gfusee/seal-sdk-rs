@@ -168,10 +168,10 @@ impl SealClientLeakingCache {
 
 #[cfg(feature = "moka")]
 pub mod moka {
-    use crate::client::base_client::{BaseSealClient, DerivedKeys, KeyServerInfo};
-    use crate::client::cache_key::{DerivedKeyCacheKey, KeyServerInfoCacheKey};
-    use crate::client::http_client::HttpClient;
-    use crate::client::sui_client::SuiClient;
+    use crate::base_client::{BaseSealClient, DerivedKeys, KeyServerInfo};
+    use crate::cache_key::{DerivedKeyCacheKey, KeyServerInfoCacheKey};
+    use crate::http_client::HttpClient;
+    use crate::sui_client::SuiClient;
     use moka::future::{Cache, CacheBuilder};
     use reqwest::Client;
 
@@ -230,7 +230,7 @@ pub mod moka {
     /// ```
     pub type SealClientMokaCache = BaseSealClient<
         Cache<KeyServerInfoCacheKey, KeyServerInfo>,
-        Cache<DerivedKeyCacheKey, Vec<DerivedKeys>>,
+        Cache<DerivedKeyCacheKey, DerivedKeys>,
         <sui_sdk::SuiClient as SuiClient>::Error,
         sui_sdk::SuiClient,
         <Client as HttpClient>::PostError,
@@ -247,8 +247,8 @@ pub mod moka {
             >,
             derived_keys_cache_builder: CacheBuilder<
                 DerivedKeyCacheKey,
-                Vec<DerivedKeys>,
-                Cache<DerivedKeyCacheKey, Vec<DerivedKeys>>,
+                DerivedKeys,
+                Cache<DerivedKeyCacheKey, DerivedKeys>,
             >,
         ) -> SealClientMokaCache {
             BaseSealClient::new_custom(

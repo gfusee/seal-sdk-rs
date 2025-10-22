@@ -1,3 +1,4 @@
+#![allow(clippy::await_holding_lock)]
 // Copyright 2025 Quentin Diebold
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -43,7 +44,7 @@ async fn test_encrypt_decrypt_bytes_single_server() -> anyhow::Result<()> {
             setup.approve_package_id,
             data_id.clone(),
             1,
-            vec![setup.seal_instances[0].key_server_id.clone()],
+            vec![setup.seal_instances[0].key_server_id],
             data_to_encrypt.clone(),
         )
         .await?;
@@ -96,7 +97,7 @@ async fn test_encrypt_decrypt_multiple_u64_single_server() -> anyhow::Result<()>
             setup.approve_package_id,
             data_id.clone(),
             1,
-            vec![setup.seal_instances[0].key_server_id.clone()],
+            vec![setup.seal_instances[0].key_server_id],
             vec![first_data_to_encrypt, second_data_to_encrypt],
         )
         .await?;
@@ -167,7 +168,7 @@ async fn test_encrypt_decrypt_multiple_bytes_single_server() -> anyhow::Result<(
             setup.approve_package_id,
             data_id.clone(),
             1,
-            vec![setup.seal_instances[0].key_server_id.clone()],
+            vec![setup.seal_instances[0].key_server_id],
             vec![
                 first_data_to_encrypt.clone(),
                 second_data_to_encrypt.clone(),
@@ -242,7 +243,7 @@ async fn test_encrypt_decrypt_mutltiple_bytes_encrypt_one_by_one_single_server()
             setup.approve_package_id,
             data_id.clone(),
             1,
-            vec![setup.seal_instances[0].key_server_id.clone()],
+            vec![setup.seal_instances[0].key_server_id],
             first_data_to_encrypt.clone(),
         )
         .await?;
@@ -252,7 +253,7 @@ async fn test_encrypt_decrypt_mutltiple_bytes_encrypt_one_by_one_single_server()
             setup.approve_package_id,
             data_id.clone(),
             1,
-            vec![setup.seal_instances[0].key_server_id.clone()],
+            vec![setup.seal_instances[0].key_server_id],
             second_data_to_encrypt.clone(),
         )
         .await?;
@@ -319,7 +320,7 @@ async fn test_encrypt_decrypt_mutltiple_bytes_decrypt_one_by_one_single_server()
             setup.approve_package_id,
             data_id.clone(),
             1,
-            vec![setup.seal_instances[0].key_server_id.clone()],
+            vec![setup.seal_instances[0].key_server_id],
             vec![
                 first_data_to_encrypt.clone(),
                 second_data_to_encrypt.clone(),
@@ -394,7 +395,7 @@ async fn test_encrypt_decrypt_u64_single_server() -> anyhow::Result<()> {
             setup.approve_package_id,
             data_id.clone(),
             1,
-            vec![setup.seal_instances[0].key_server_id.clone()],
+            vec![setup.seal_instances[0].key_server_id],
             data_to_encrypt,
         )
         .await?;
@@ -404,8 +405,8 @@ async fn test_encrypt_decrypt_u64_single_server() -> anyhow::Result<()> {
 
     _ = approve_builder.programmable_move_call(
         setup.approve_package_id.into(),
-        Identifier::from_str("wildcard").unwrap(),
-        Identifier::from_str("seal_approve").unwrap(),
+        Identifier::from_str("wildcard")?,
+        Identifier::from_str("seal_approve")?,
         vec![],
         vec![id_arg],
     );
@@ -612,11 +613,8 @@ async fn test_encrypt_decrypt_bytes_three_servers_threshold_three_one_crash() ->
         .decrypt_object_bytes(&bcs::to_bytes(&encrypted)?, ptb, &session_key)
         .await;
 
-    match decrypted_result {
-        Ok(_) => {
-            bail!("Should not succeed!")
-        }
-        Err(_) => {}
+    if decrypted_result.is_ok() {
+        bail!("Should not succeed!")
     }
 
     Ok(())

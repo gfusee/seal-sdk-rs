@@ -80,7 +80,7 @@ struct RequestFormat {
 /// # #[tokio::main]
 /// # async fn main() -> anyhow::Result<()> {
 /// let mut signer = DummySigner;
-/// 
+///
 /// let session_key = SessionKey::new(
 ///     ObjectID([0; 32]),
 ///     5,
@@ -121,7 +121,7 @@ impl SessionKey {
     {
         let package_id: ObjectID = package_id.into();
 
-        if ttl_min < MIN_TTL_MIN || ttl_min > MAX_TTL_MAX {
+        if !(MIN_TTL_MIN..=MAX_TTL_MAX).contains(&ttl_min) {
             return Err(SessionKeyError::InvalidTTLMin {
                 min: MIN_TTL_MIN,
                 max: MAX_TTL_MAX,
@@ -138,7 +138,7 @@ impl SessionKey {
 
         let Some(message_to_sign) = signed_message(
             sui_sdk_types::ObjectId::from(package_id).to_string(),
-            &session_key.public(),
+            session_key.public(),
             now_ms,
             ttl_min,
         ) else {
@@ -223,12 +223,12 @@ impl SessionKey {
         let personal_message_signature = self.personal_message_signature;
 
         Certificate {
-            user: self.personal_message_signer_address_and_public_key.0.into(),
+            user: self.personal_message_signer_address_and_public_key.0,
             session_vk: self.session_key.public().clone(),
             creation_time: self.creation_time_ms,
             ttl_min: self.ttl_min,
             signature: UserSignature::Simple(SimpleSignature::Ed25519 {
-                signature: sui_sdk_types::Ed25519Signature::from_bytes(&personal_message_signature)
+                signature: sui_sdk_types::Ed25519Signature::from_bytes(personal_message_signature)
                     .unwrap(),
                 public_key: sui_sdk_types::Ed25519PublicKey::new(
                     self.personal_message_signer_address_and_public_key

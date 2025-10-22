@@ -132,7 +132,7 @@ where
 
 #[cfg(feature = "moka")]
 mod moka {
-    use crate::client::cache::SealCache;
+    use crate::cache::SealCache;
     use async_trait::async_trait;
     use std::hash::Hash;
     use std::sync::Arc;

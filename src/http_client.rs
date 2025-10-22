@@ -24,7 +24,7 @@ impl PostResponse {
     pub fn is_success(&self) -> bool {
         let status = self.status;
 
-        status >= 200 && status < 300
+        (200..300).contains(&status)
     }
 }
 

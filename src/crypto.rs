@@ -196,11 +196,11 @@ pub fn seal_decrypt_all_objects(
         let mut usks = HashMap::new();
         let mut pks = Vec::with_capacity(encrypted_object.services.len());
         for (server_id, _index) in encrypted_object.services.iter() {
-            if let Some(user_secret_key) = keys_for_id.get(&server_id) {
+            if let Some(user_secret_key) = keys_for_id.get(server_id) {
                 usks.insert((*server_id).into(), *user_secret_key);
             };
 
-            let pk = server_pk_map.get(&server_id).ok_or_else(|| {
+            let pk = server_pk_map.get(server_id).ok_or_else(|| {
                 FastCryptoError::GeneralError(format!(
                     "No public key configured for server {}",
                     server_id

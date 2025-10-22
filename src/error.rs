@@ -12,10 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use std::convert::Infallible;
 use crate::generic_types::ObjectID;
 use fastcrypto::error::FastCryptoError;
 use http::header::{InvalidHeaderName, InvalidHeaderValue};
+use std::convert::Infallible;
 use thiserror::Error;
 
 #[derive(Debug, Error)]

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#[cfg(all(feature = "client"))]
+#[cfg(feature = "client")]
 pub mod client;
 pub mod signer;
 mod types;
