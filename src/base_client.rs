@@ -194,7 +194,7 @@ where
     /// Internally the payload is wrapped in a one-element `Vec` so that the heavier-weight
     /// logic in [`encrypt_multiple_bytes`] is reused. The returned tuple contains the
     /// encrypted object and an emergency recovery key; discard the key if you do not want an
-    /// authority to retain direct decryption capability outside of the key servers.
+    /// authority to retain direct decryption capability outside the key servers.
     ///
     /// # Examples
     ///
@@ -581,7 +581,7 @@ where
         let service_ids: Vec<ObjectID> = first_encrypted_object
             .services
             .iter()
-            .map(|(id, _)| (*id))
+            .map(|(id, _)| *id)
             .collect();
 
         let key_server_info = self.fetch_key_server_info(service_ids).await?;
