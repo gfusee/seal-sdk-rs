@@ -39,10 +39,11 @@ use sui_sdk::wallet_context::WalletContext;
 use sui_types::Identifier;
 use sui_types::programmable_transaction_builder::ProgrammableTransactionBuilder;
 use std::str::FromStr;
+use seal_sdk_rs::generic_types::ObjectID;
 
 async fn encrypt_and_decrypt(
-    package_id: seal_sdk_rs::generic_types::ObjectID,
-    key_server_id: seal_sdk_rs::generic_types::ObjectID,
+    package_id: ObjectID,
+    key_server_id: ObjectID,
 ) -> anyhow::Result<()> {
     let sui_client = SuiClientBuilder::default()
         .build("https://fullnode.testnet.sui.io:443")
