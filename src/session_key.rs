@@ -55,6 +55,7 @@ struct RequestFormat {
 ///
 /// # use seal_sdk_rs::signer::Signer;
 /// # use async_trait::async_trait;
+/// # use fastcrypto::traits::ToFromBytes;
 /// # use fastcrypto::ed25519::{Ed25519PublicKey, Ed25519Signature};
 /// # use std::convert::Infallible;
 /// #
@@ -77,7 +78,7 @@ struct RequestFormat {
 /// # }
 /// #
 /// # #[tokio::main]
-/// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// # async fn main() -> anyhow::Result<()> {
 /// let mut signer = DummySigner;
 /// 
 /// let session_key = SessionKey::new(

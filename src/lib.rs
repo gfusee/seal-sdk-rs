@@ -16,7 +16,7 @@
 pub mod base_client;
 pub mod cache;
 pub mod cache_key;
-mod crypto;
+pub mod crypto;
 pub mod error;
 pub mod generic_types;
 pub mod http_client;

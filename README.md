@@ -35,7 +35,7 @@ use std::str::FromStr;
 async fn encrypt_and_decrypt(
     package_id: seal_sdk_rs::generic_types::ObjectID,
     key_server_id: seal_sdk_rs::generic_types::ObjectID,
-) -> Result<(), SealClientError> {
+) -> anyhow::Result<()> {
     let sui_client = SuiClientBuilder::default()
         .build("https://fullnode.testnet.sui.io:443")
         .await?;
@@ -52,7 +52,7 @@ async fn encrypt_and_decrypt(
         .await?;
     drop(recovery_key);
 
-    let mut wallet = WalletContext::new("<path to the config file>").unwrap();
+    let mut wallet = WalletContext::new("<path to the config file>".as_ref()).unwrap();
     let session_key = SessionKey::new(package_id, 5, &mut wallet).await?;
 
     let mut builder = ProgrammableTransactionBuilder::new();

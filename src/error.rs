@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use std::convert::Infallible;
 use crate::generic_types::ObjectID;
 use fastcrypto::error::FastCryptoError;
 use http::header::{InvalidHeaderName, InvalidHeaderValue};
@@ -99,4 +100,10 @@ pub enum SessionKeyError {
     #[cfg(feature = "native-sui-sdk")]
     #[error("Wallet context error: {0}")]
     WalletContext(#[from] crate::native_sui_sdk::signer::wallet_context::WalletContextError),
+}
+
+impl From<Infallible> for SessionKeyError {
+    fn from(_: Infallible) -> Self {
+        panic!()
+    }
 }

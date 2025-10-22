@@ -348,7 +348,7 @@ where
     /// # Examples
     ///
     /// ```rust,no_run
-    /// # use seal_sdk_rs::base_client::BCSSerializableProgrammableTransaction;
+    /// # use seal_sdk_rs::generic_types::BCSSerializableProgrammableTransaction;
     /// # use seal_sdk_rs::crypto::EncryptedObject;
     /// # use seal_sdk_rs::error::SealClientError;
     /// # use seal_sdk_rs::native_sui_sdk::client::seal_client::SealClient;
@@ -401,7 +401,7 @@ where
     /// # Examples
     ///
     /// ```rust,no_run
-    /// # use seal_sdk_rs::base_client::BCSSerializableProgrammableTransaction;
+    /// # use seal_sdk_rs::generic_types::BCSSerializableProgrammableTransaction;
     /// # use seal_sdk_rs::crypto::EncryptedObject;
     /// # use seal_sdk_rs::error::SealClientError;
     /// # use seal_sdk_rs::native_sui_sdk::client::seal_client::SealClient;
@@ -469,7 +469,7 @@ where
     /// # Examples
     ///
     /// ```rust,no_run
-    /// # use seal_sdk_rs::base_client::BCSSerializableProgrammableTransaction;
+    /// # use seal_sdk_rs::generic_types::BCSSerializableProgrammableTransaction;
     /// # use seal_sdk_rs::crypto::EncryptedObject;
     /// # use seal_sdk_rs::error::SealClientError;
     /// # use seal_sdk_rs::native_sui_sdk::client::seal_client::SealClient;
@@ -526,7 +526,7 @@ where
     /// # Examples
     ///
     /// ```rust,no_run
-    /// # use seal_sdk_rs::base_client::BCSSerializableProgrammableTransaction;
+    /// # use seal_sdk_rs::generic_types::BCSSerializableProgrammableTransaction;
     /// # use seal_sdk_rs::crypto::EncryptedObject;
     /// # use seal_sdk_rs::error::SealClientError;
     /// # use seal_sdk_rs::native_sui_sdk::client::seal_client::SealClient;
