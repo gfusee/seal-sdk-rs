@@ -40,10 +40,13 @@ jobs:
         run: cargo install mdbook --locked
 
       - name: Install licensesnip
-        run: cargo install licensesnip
+        run: cargo install licensesnip --locked
 
       - name: Build documentation
         run: mdbook build book
+
+      - name: License
+        run: licensesnip
 
       - name: Run clippy (all targets, tests)
         run: cargo clippy --all-targets --all-features -- -D warnings
@@ -53,14 +56,6 @@ jobs:
 
       - name: Run tests
         run: cargo test --all-features
-
-      - name: Install cargo-release
-        run: cargo install cargo-release --locked
-
-      - name: Publish crate
-        env:
-          CARGO_REGISTRY_TOKEN: ${{ secrets.CRATES_IO_TOKEN }}
-        run: yes | cargo-release release ${{ github.event.release.tag_name }} --execute --no-tag --no-verify --no-push --allow-branch '*'
 
       - name: Push updated files
         run: |
