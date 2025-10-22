@@ -17,7 +17,7 @@ your own HTTP transport, Sui client, signer, and cache.
 
 ```toml
 [dependencies]
-seal-sdk-rs = "0.0.1"
+seal-sdk-rs = { git = "https://github.com/gfusee/seal-sdk-rs", tag = "0.0.1" }
 ```
 
 ## Quick start
