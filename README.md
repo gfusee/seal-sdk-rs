@@ -117,7 +117,7 @@ recovery behaviour.
 |-----------------|----------------------------------------------------------|
 | `client`        | Enables `reqwest` + HTTP abstractions. Included by default. |
 | `native-tls`    | Uses native TLS with `reqwest`. Included by default.         |
-| `native-sui-sdk`| Pulls in the `MystenLabs/sui` crates and adapters.       |
+| `native-sui-sdk`| Pulls in the `MystenLabs/sui` crates and adapters. Included by default.      |
 | `moka-client`   | Adds the `SealClientMokaCache` specialization.           |
 
 Disable the default features if you plan to provide your own stack.
