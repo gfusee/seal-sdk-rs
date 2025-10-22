@@ -43,7 +43,7 @@ jobs:
         run: cargo install licensesnip --locked
 
       - name: Build documentation
-        run: mdbook build book
+        run: mdbook build book --dest-dir ../docs
 
       - name: License
         run: licensesnip
