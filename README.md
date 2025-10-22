@@ -13,7 +13,13 @@ your own HTTP transport, Sui client, signer, and cache.
 - Encryption helpers return recovery keys for break-glass scenarios.
 - Bridging types let you use both `MystenLabs/sui` and `sui-rust-sdk` APIs.
 
+## Documentation
+
+A comprehensive guide is available [here](https://gfusee.github.io/seal-sdk-rs).
+
 ## Install
+
+Use the git dependency and set the `tag` to the desired crate version in `MAJOR.MINOR.PATCH` format.
 
 ```toml
 [dependencies]
@@ -21,6 +27,8 @@ seal-sdk-rs = { git = "https://github.com/gfusee/seal-sdk-rs", tag = "0.0.1" }
 ```
 
 ## Quick start
+
+A full detailed flow is available in the [guide](https://gfusee.github.io/seal-sdk-rs).
 
 ```rust,no_run
 use seal_sdk_rs::error::SealClientError;
@@ -74,8 +82,6 @@ async fn encrypt_and_decrypt(
 }
 ```
 
-For a full walkthrough, open the docs in `book/` (run `mdbook serve book`).
-
 ## Concepts at a glance
 
 - `BaseSealClient` accepts custom HTTP, Sui, cache, and error types.
@@ -114,11 +120,6 @@ recovery behaviour.
 | `moka-client`   | Adds the `SealClientMokaCache` specialization.           |
 
 Disable the default features if you plan to provide your own stack.
-
-## Documentation
-
-- mdBook guide: run `mdbook serve book`
-- API docs: `cargo doc --open`
 
 ## Contributing
 

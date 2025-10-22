@@ -3,7 +3,7 @@
 Thank you for taking the time to contribute to this repository! Contributions
 are very welcome. The project aims to maximise developer experience, so
 documentation feedback is especially valuable. Before opening a pull request,
-please open an issue or reach out to @gfusee on GitHub to discuss the change.
+please open an issue or reach out to [gfusee33](https://x.com/gfusee33) on X to discuss the change.
 
 ## Running the tests
 
