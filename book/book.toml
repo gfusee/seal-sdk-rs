@@ -1,6 +1,6 @@
 [book]
-title = "seal-sdk-rs Guide"
-author = ["Mysten Labs"]
+title = "Seal Rust SDK Guide"
+author = ["Quentin Diebold"]
 description = "Developer guide and reference for the seal-sdk-rs crate"
 language = "en"
 multilingual = false
