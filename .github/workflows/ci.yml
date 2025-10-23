@@ -55,8 +55,8 @@ jobs:
       - name: Build documentation
         run: mdbook build book
 
-      - name: Build test images
-        run: ./build_test_images.sh
+      - name: Pull test images
+        run: ./utils/docker/pull_images.sh
 
       - name: Run tests
         run: cargo test --all-features
