@@ -7,8 +7,8 @@ please open an issue or reach out to [gfusee33](https://x.com/gfusee33) on X to 
 
 ## Running the tests
 
-1. Build the Docker images used by the test suite:
-   `./build_test_images.sh`
+1. Pull the Docker images used by the test suite:
+   `./utils/docker/pull_images.sh`
 2. Run the tests: `cargo test`
 
 The integration tests create Docker containers for the Sui localnet and Seal

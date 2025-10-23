@@ -36,6 +36,19 @@ use tokio::io::AsyncReadExt;
 use tokio::net::TcpListener;
 use tokio::sync::OnceCell;
 
+const LOCALNET_IMAGE_NAME: &str = "ghcr.io/gfusee/sui-localnet/sui-localnet";
+const LOCALNET_IMAGE_TAG: &str = "0.0.9";
+const LOCALNET_CONTAINER_NAME: &str = "seal-sdk-rs-localnet";
+
+const SEAL_SERVER_IMAGE_NAME: &str = "ghcr.io/gfusee/sui-localnet/seal-server";
+const SEAL_SERVER_IMAGE_TAG: &str = "0.0.9";
+const SEAL_SERVER_CONTAINER_NAME: &str = "seal-sdk-rs-seal-server";
+const SEAL_SERVER_INTERNAL_PORT: u16 = 2024;
+
+const DOCKER_NETWORK: &str = "seal-sdk-rs";
+
+static SETUP: OnceCell<ArcSetup> = OnceCell::const_new();
+
 pub const APPROVE_PACKAGE: [&str; 1] = [
     "oRzrCwYAAAAGAQACAwIFBQcEBwsWCCEgDEEHAAEAAAABAAEKAgAMc2VhbF9hcHByb3ZlCHdpbGRjYXJkAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAAQECAA==",
 ];
@@ -83,19 +96,6 @@ struct SealInfo {
     key_server_package_id: String,
     public_key: String,
 }
-
-const LOCALNET_IMAGE_NAME: &str = "seal-sdk-rs-localnet";
-const LOCALNET_IMAGE_TAG: &str = "latest";
-const LOCALNET_CONTAINER_NAME: &str = "seal-sdk-rs-localnet";
-
-const SEAL_SERVER_IMAGE_NAME: &str = "seal-sdk-rs-seal-server";
-const SEAL_SERVER_IMAGE_TAG: &str = "latest";
-const SEAL_SERVER_CONTAINER_NAME: &str = "seal-sdk-rs-seal-server";
-const SEAL_SERVER_INTERNAL_PORT: u16 = 2024;
-
-const DOCKER_NETWORK: &str = "seal-sdk-rs";
-
-static SETUP: OnceCell<ArcSetup> = OnceCell::const_new();
 
 #[derive(Clone)]
 pub struct ArcSetup {

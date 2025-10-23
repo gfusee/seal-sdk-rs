@@ -1,5 +1,0 @@
----
-keystore:
-  File: /root/.sui/sui_config/sui.keystore
-external_keys: ~
-envs: []
