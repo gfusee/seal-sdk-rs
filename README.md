@@ -23,7 +23,7 @@ Use the git dependency and set the `tag` to the desired crate version in `MAJOR.
 
 ```toml
 [dependencies]
-seal-sdk-rs = { git = "https://github.com/gfusee/seal-sdk-rs", tag = "0.0.1" }
+seal-sdk-rs = { git = "https://github.com/gfusee/seal-sdk-rs", tag = "0.0.2" }
 ```
 
 ## Quick start
