@@ -31,15 +31,14 @@ seal-sdk-rs = { git = "https://github.com/gfusee/seal-sdk-rs", tag = "0.0.1" }
 A full detailed flow is available in the [guide](https://gfusee.github.io/seal-sdk-rs).
 
 ```rust,no_run
-use seal_sdk_rs::error::SealClientError;
 use seal_sdk_rs::native_sui_sdk::client::seal_client::SealClient;
 use seal_sdk_rs::session_key::SessionKey;
-use sui_sdk::SuiClientBuilder;
-use sui_sdk::wallet_context::WalletContext;
-use sui_types::Identifier;
-use sui_types::programmable_transaction_builder::ProgrammableTransactionBuilder;
 use std::str::FromStr;
 use seal_sdk_rs::generic_types::ObjectID;
+use seal_sdk_rs::native_sui_sdk::sui_sdk::SuiClientBuilder;
+use seal_sdk_rs::native_sui_sdk::sui_sdk::wallet_context::WalletContext;
+use seal_sdk_rs::native_sui_sdk::sui_types::Identifier;
+use seal_sdk_rs::native_sui_sdk::sui_types::programmable_transaction_builder::ProgrammableTransactionBuilder;
 
 async fn encrypt_and_decrypt(
     package_id: ObjectID,
@@ -50,7 +49,7 @@ async fn encrypt_and_decrypt(
         .await?;
     let client = SealClient::new(sui_client);
 
-    let (encrypted, recovery_key) = client
+    let (encrypted, _) = client
         .encrypt_bytes(
             package_id,
             b"demo-id".to_vec(),
@@ -59,7 +58,6 @@ async fn encrypt_and_decrypt(
             b"hello seal".to_vec(),
         )
         .await?;
-    drop(recovery_key);
 
     let mut wallet = WalletContext::new("<path to the config file>".as_ref()).unwrap();
     let session_key = SessionKey::new(package_id, 5, &mut wallet).await?;

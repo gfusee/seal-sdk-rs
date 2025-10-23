@@ -16,3 +16,6 @@
 pub mod client;
 pub mod signer;
 mod types;
+
+pub use sui_sdk;
+pub use sui_types;
