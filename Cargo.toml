@@ -14,7 +14,7 @@ serde = "=1.0.228"
 sui-sdk-types = { git = "https://github.com/mystenlabs/sui-rust-sdk", features = ["serde"], rev = "86a9e06" }
 base64 = "=0.22.1"
 futures = "=0.3.31"
-tokio = { version = "=1.46.1", features = ["full"] }
+tokio = { version = "^1.47.1", features = ["full"] }
 seal_crypto = { package = "crypto", git = "https://github.com/mystenlabs/seal", rev = "6755476d6f2eb4e7069f073228516a8eb7c7c1ea" }
 thiserror = "=1.0.69"
 bcs = "=0.1.6"
