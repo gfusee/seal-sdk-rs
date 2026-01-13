@@ -278,9 +278,9 @@ async fn test_encrypt_decrypt_mutltiple_bytes_encrypt_one_by_one_single_server()
     )
     .await?;
 
-    let encrypted_bytes = vec![first_encrypted, second_encrypted]
-        .iter()
-        .map(bcs::to_bytes)
+    let encrypted_bytes = [first_encrypted, second_encrypted]
+        .map(|e| bcs::to_bytes(&e))
+        .into_iter()
         .collect::<Result<Vec<_>, _>>()?;
 
     let encrypted_bytes_ref = encrypted_bytes
