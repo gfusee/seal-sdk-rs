@@ -13,6 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use std::collections::HashMap;
 use crate::utils::setup::setup;
 use anyhow::bail;
 use reqwest::Client;
@@ -23,6 +24,7 @@ use std::str::FromStr;
 use sui_sdk::SuiClientBuilder;
 use sui_types::Identifier;
 use sui_types::programmable_transaction_builder::ProgrammableTransactionBuilder;
+use seal_sdk_rs::base_client::KeyServerConfig;
 
 pub mod utils;
 
@@ -39,12 +41,17 @@ async fn test_encrypt_decrypt_bytes_single_server() -> anyhow::Result<()> {
     let data_to_encrypt = vec![0u8, 1, 2, 3];
     let data_id = vec![6u8];
 
+    let key_servers = KeyServerConfig::new(
+        setup.seal_instances[0].key_server_id,
+        None
+    );
+
     let (encrypted, _) = seal_client
         .encrypt_bytes(
             setup.approve_package_id,
             data_id.clone(),
             1,
-            vec![setup.seal_instances[0].key_server_id],
+            vec![key_servers],
             data_to_encrypt.clone(),
         )
         .await?;
@@ -70,7 +77,7 @@ async fn test_encrypt_decrypt_bytes_single_server() -> anyhow::Result<()> {
     .await?;
 
     let decrypted = seal_client
-        .decrypt_object_bytes(&bcs::to_bytes(&encrypted)?, ptb, &session_key)
+        .decrypt_object_bytes(&bcs::to_bytes(&encrypted)?, ptb, &session_key, HashMap::new())
         .await?;
 
     assert_eq!(decrypted, data_to_encrypt);
@@ -92,12 +99,17 @@ async fn test_encrypt_decrypt_multiple_u64_single_server() -> anyhow::Result<()>
     let second_data_to_encrypt = 17u64;
     let data_id = vec![6u8];
 
+    let key_server = KeyServerConfig::new(
+        setup.seal_instances[0].key_server_id,
+        None
+    );
+
     let encrypted_with_keys = seal_client
         .encrypt_multiple(
             setup.approve_package_id,
             data_id.clone(),
             1,
-            vec![setup.seal_instances[0].key_server_id],
+            vec![key_server],
             vec![first_data_to_encrypt, second_data_to_encrypt],
         )
         .await?;
@@ -138,7 +150,7 @@ async fn test_encrypt_decrypt_multiple_u64_single_server() -> anyhow::Result<()>
         .collect::<Vec<_>>();
 
     let decrypted = seal_client
-        .decrypt_multiple_objects::<u64, _>(&encrypted_bytes_ref, ptb, &session_key)
+        .decrypt_multiple_objects::<u64, _>(&encrypted_bytes_ref, ptb, &session_key, HashMap::new())
         .await?;
 
     assert_eq!(
@@ -163,12 +175,17 @@ async fn test_encrypt_decrypt_multiple_bytes_single_server() -> anyhow::Result<(
     let second_data_to_encrypt = vec![4u8, 5, 6, 7, 8];
     let data_id = vec![6u8];
 
+    let key_server = KeyServerConfig::new(
+        setup.seal_instances[0].key_server_id,
+        None
+    );
+
     let encrypted_with_keys = seal_client
         .encrypt_multiple_bytes(
             setup.approve_package_id,
             data_id.clone(),
             1,
-            vec![setup.seal_instances[0].key_server_id],
+            vec![key_server],
             vec![
                 first_data_to_encrypt.clone(),
                 second_data_to_encrypt.clone(),
@@ -212,7 +229,7 @@ async fn test_encrypt_decrypt_multiple_bytes_single_server() -> anyhow::Result<(
         .collect::<Vec<_>>();
 
     let decrypted = seal_client
-        .decrypt_multiple_objects_bytes(&encrypted_bytes_ref, ptb, &session_key)
+        .decrypt_multiple_objects_bytes(&encrypted_bytes_ref, ptb, &session_key, HashMap::new())
         .await?;
 
     assert_eq!(
@@ -238,22 +255,32 @@ async fn test_encrypt_decrypt_mutltiple_bytes_encrypt_one_by_one_single_server()
     let second_data_to_encrypt = vec![4u8, 5, 6, 7, 8];
     let data_id = vec![6u8];
 
+    let key_server = KeyServerConfig::new(
+        setup.seal_instances[0].key_server_id,
+        None
+    );
+
     let (first_encrypted, _) = seal_client
         .encrypt_bytes(
             setup.approve_package_id,
             data_id.clone(),
             1,
-            vec![setup.seal_instances[0].key_server_id],
+            vec![key_server],
             first_data_to_encrypt.clone(),
         )
         .await?;
+
+    let key_server = KeyServerConfig::new(
+        setup.seal_instances[0].key_server_id,
+        None
+    );
 
     let (second_encrypted, _) = seal_client
         .encrypt_bytes(
             setup.approve_package_id,
             data_id.clone(),
             1,
-            vec![setup.seal_instances[0].key_server_id],
+            vec![key_server],
             second_data_to_encrypt.clone(),
         )
         .await?;
@@ -289,7 +316,7 @@ async fn test_encrypt_decrypt_mutltiple_bytes_encrypt_one_by_one_single_server()
         .collect::<Vec<_>>();
 
     let decrypted = seal_client
-        .decrypt_multiple_objects_bytes(&encrypted_bytes_ref, ptb, &session_key)
+        .decrypt_multiple_objects_bytes(&encrypted_bytes_ref, ptb, &session_key, HashMap::new())
         .await?;
 
     assert_eq!(
@@ -315,12 +342,17 @@ async fn test_encrypt_decrypt_mutltiple_bytes_decrypt_one_by_one_single_server()
     let second_data_to_encrypt = vec![4u8, 5, 6, 7, 8];
     let data_id = vec![6u8];
 
+    let key_server = KeyServerConfig::new(
+        setup.seal_instances[0].key_server_id,
+        None
+    );
+
     let encrypted_with_keys = seal_client
         .encrypt_multiple_bytes(
             setup.approve_package_id,
             data_id.clone(),
             1,
-            vec![setup.seal_instances[0].key_server_id],
+            vec![key_server],
             vec![
                 first_data_to_encrypt.clone(),
                 second_data_to_encrypt.clone(),
@@ -364,11 +396,11 @@ async fn test_encrypt_decrypt_mutltiple_bytes_decrypt_one_by_one_single_server()
     let second_encrypted_bytes = encrypted_bytes_iter.next().unwrap();
 
     let first_decrypted = seal_client
-        .decrypt_object_bytes(&first_encrypted_bytes, ptb.clone(), &session_key)
+        .decrypt_object_bytes(&first_encrypted_bytes, ptb.clone(), &session_key, HashMap::new())
         .await?;
 
     let second_decrypted = seal_client
-        .decrypt_object_bytes(&second_encrypted_bytes, ptb, &session_key)
+        .decrypt_object_bytes(&second_encrypted_bytes, ptb, &session_key, HashMap::new())
         .await?;
 
     assert_eq!(first_decrypted, first_data_to_encrypt);
@@ -390,12 +422,17 @@ async fn test_encrypt_decrypt_u64_single_server() -> anyhow::Result<()> {
     let data_to_encrypt = 17u64;
     let data_id = vec![6u8];
 
+    let key_server = KeyServerConfig::new(
+        setup.seal_instances[0].key_server_id,
+        None
+    );
+
     let (encrypted, _) = seal_client
         .encrypt(
             setup.approve_package_id,
             data_id.clone(),
             1,
-            vec![setup.seal_instances[0].key_server_id],
+            vec![key_server],
             data_to_encrypt,
         )
         .await?;
@@ -421,7 +458,7 @@ async fn test_encrypt_decrypt_u64_single_server() -> anyhow::Result<()> {
     .await?;
 
     let decrypted: u64 = seal_client
-        .decrypt_object(&bcs::to_bytes(&encrypted)?, ptb, &session_key)
+        .decrypt_object(&bcs::to_bytes(&encrypted)?, ptb, &session_key, HashMap::new())
         .await?;
 
     assert_eq!(decrypted, data_to_encrypt);
@@ -450,7 +487,7 @@ async fn test_encrypt_decrypt_bytes_three_servers() -> anyhow::Result<()> {
             setup
                 .seal_instances
                 .iter()
-                .map(|e| e.key_server_id)
+                .map(|e| KeyServerConfig::new(e.key_server_id, None))
                 .collect(),
             data_to_encrypt.clone(),
         )
@@ -477,7 +514,7 @@ async fn test_encrypt_decrypt_bytes_three_servers() -> anyhow::Result<()> {
     .await?;
 
     let decrypted = seal_client
-        .decrypt_object_bytes(&bcs::to_bytes(&encrypted)?, ptb, &session_key)
+        .decrypt_object_bytes(&bcs::to_bytes(&encrypted)?, ptb, &session_key, HashMap::new())
         .await?;
 
     assert_eq!(decrypted, data_to_encrypt);
@@ -506,7 +543,10 @@ async fn test_encrypt_decrypt_bytes_three_servers_threshold_two_one_crash() -> a
         seal_instances_that_wont_crash_ids_iter.next().unwrap(),
         seal_instances_that_wont_crash_ids_iter.next().unwrap(),
         seal_instance_that_will_crash.key_server_id,
-    ];
+    ]
+        .into_iter()
+        .map(|id| KeyServerConfig::new(id, None))
+        .collect();
 
     let (encrypted, _) = seal_client
         .encrypt_bytes(
@@ -543,7 +583,7 @@ async fn test_encrypt_decrypt_bytes_three_servers_threshold_two_one_crash() -> a
     .await?;
 
     let decrypted = seal_client
-        .decrypt_object_bytes(&bcs::to_bytes(&encrypted)?, ptb, &session_key)
+        .decrypt_object_bytes(&bcs::to_bytes(&encrypted)?, ptb, &session_key, HashMap::new())
         .await?;
 
     assert_eq!(decrypted, data_to_encrypt);
@@ -573,7 +613,10 @@ async fn test_encrypt_decrypt_bytes_three_servers_threshold_three_one_crash() ->
         seal_instances_that_wont_crash_ids_iter.next().unwrap(),
         seal_instances_that_wont_crash_ids_iter.next().unwrap(),
         seal_instance_that_will_crash.key_server_id,
-    ];
+    ]
+        .into_iter()
+        .map(|id| KeyServerConfig::new(id, None))
+        .collect();
 
     let (encrypted, _) = seal_client
         .encrypt_bytes(
@@ -610,7 +653,7 @@ async fn test_encrypt_decrypt_bytes_three_servers_threshold_three_one_crash() ->
     .await?;
 
     let decrypted_result = seal_client
-        .decrypt_object_bytes(&bcs::to_bytes(&encrypted)?, ptb, &session_key)
+        .decrypt_object_bytes(&bcs::to_bytes(&encrypted)?, ptb, &session_key, HashMap::new())
         .await;
 
     if decrypted_result.is_ok() {

@@ -37,7 +37,7 @@ use tokio::net::TcpListener;
 use tokio::sync::OnceCell;
 
 const LOCALNET_IMAGE_NAME: &str = "ghcr.io/gfusee/sui-localnet/sui-localnet";
-const LOCALNET_IMAGE_TAG: &str = "0.0.9";
+const LOCALNET_IMAGE_TAG: &str = "0.0.15";
 const LOCALNET_CONTAINER_NAME: &str = "seal-sdk-rs-localnet";
 
 const SEAL_SERVER_IMAGE_NAME: &str = "ghcr.io/gfusee/sui-localnet/seal-server";
