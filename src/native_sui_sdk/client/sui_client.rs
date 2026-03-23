@@ -239,6 +239,9 @@ impl SuiClientKeyServerExt for sui_sdk::SuiClient {
 
         let name = match name_value {
             SuiMoveValue::String(name) => name,
+            // Some names (e.g. long hex committee names) may be deserialized as Address
+            // due to serde untagged enum ordering.
+            SuiMoveValue::Address(addr) => addr.to_string(),
             _ => {
                 return Err(SuiClientError::InvalidKeyServerDynamicFieldsType {
                     object_id: key_server_id,
@@ -258,7 +261,10 @@ impl SuiClientKeyServerExt for sui_sdk::SuiClient {
             }
         };
 
-        // Parse server_type enum variant to extract url (Independent) or empty (Committee).
+        // Parse server_type to extract url.
+        // Due to serde untagged deserialization order, the RPC may return a Variant
+        // (with an explicit "variant" field) or a Struct (when the SDK deserializes
+        // the variant JSON as a struct, ignoring the extra "variant" key).
         let url = match server_type_value {
             SuiMoveValue::Variant(variant) => {
                 match variant.variant.as_str() {
@@ -280,6 +286,14 @@ impl SuiClientKeyServerExt for sui_sdk::SuiClient {
                             object_id: key_server_id,
                         });
                     }
+                }
+            }
+            SuiMoveValue::Struct(ref s) => {
+                // Fallback: serde may deserialize the enum variant as a Struct.
+                // Independent variant has a "url" field, Committee does not.
+                match s.field_value("url") {
+                    Some(SuiMoveValue::String(url)) => url,
+                    _ => String::new(),
                 }
             }
             _ => {

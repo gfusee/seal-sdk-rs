@@ -694,7 +694,7 @@ async fn test_encrypt_decrypt_bytes_committee() -> anyhow::Result<()> {
 
     let (encrypted, _) = seal_client
         .encrypt_bytes(
-            committee.seal_package_id,
+            setup.approve_package_id,
             data_id.clone(),
             1,
             vec![key_servers],
@@ -760,7 +760,7 @@ async fn test_encrypt_decrypt_bytes_committee_wrong_aggregator_url() -> anyhow::
 
     let (encrypted, _) = seal_client
         .encrypt_bytes(
-            committee.seal_package_id,
+            setup.approve_package_id,
             data_id.clone(),
             1,
             vec![key_servers],
@@ -833,7 +833,7 @@ async fn test_encrypt_decrypt_bytes_committee_no_aggregator_url() -> anyhow::Res
 
     let (encrypted, _) = seal_client
         .encrypt_bytes(
-            committee.seal_package_id,
+            setup.approve_package_id,
             data_id.clone(),
             1,
             vec![key_servers],

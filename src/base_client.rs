@@ -691,7 +691,6 @@ where
             let response_future = async move {
                 let mut headers = HashMap::new();
 
-                headers.insert("Client-Sdk-Type".to_string(), "rust".to_string());
                 headers.insert("Client-Sdk-Version".to_string(), "1.0.0".to_string());
                 headers.insert("Content-Type".to_string(), "application/json".to_string());
 
