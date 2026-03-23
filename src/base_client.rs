@@ -39,6 +39,24 @@ pub struct KeyServerInfo {
     pub public_key: String,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct KeyServerConfig {
+    object_id: ObjectID,
+    aggregator_url: Option<String>,
+}
+
+impl KeyServerConfig {
+    pub fn new<ID>(object_id: ID, aggregator_url: Option<String>) -> Self
+    where
+        ObjectID: From<ID>,
+    {
+        Self {
+            object_id: object_id.into(),
+            aggregator_url,
+        }
+    }
+}
+
 pub type DerivedKeys = (ObjectID, FetchKeyResponse);
 
 #[derive(Clone)]
@@ -109,25 +127,24 @@ where
     ///         setup.approve_package_id,
     ///         vec![6u8],
     ///         1,
-    ///         vec![setup.key_server_id.clone()],
+    ///         vec![seal_sdk_rs::base_client::KeyServerConfig::new(setup.key_server_id, None)],
     ///         17u64,
     ///     )
     ///     .await?;
     /// # Ok(())
     /// # }
     /// ```
-    pub async fn encrypt<T, ID1, ID2>(
+    pub async fn encrypt<T, ID1>(
         &self,
         package_id: ID1,
         id: Vec<u8>,
         threshold: u8,
-        key_servers: Vec<ID2>,
+        key_servers: Vec<KeyServerConfig>,
         data: T,
     ) -> Result<(EncryptedObject, [u8; 32]), SealClientError>
     where
         T: Serialize,
         ObjectID: From<ID1>,
-        ObjectID: From<ID2>,
     {
         let data = bcs::to_bytes(&data)?;
         self.encrypt_bytes(package_id, id, threshold, key_servers, data)
@@ -160,25 +177,24 @@ where
     ///         setup.approve_package_id,
     ///         vec![6u8],
     ///         1,
-    ///         vec![setup.key_server_id.clone()],
+    ///         vec![seal_sdk_rs::base_client::KeyServerConfig::new(setup.key_server_id, None)],
     ///         vec![10u64, 17u64],
     ///     )
     ///     .await?;
     /// # Ok(())
     /// # }
     /// ```
-    pub async fn encrypt_multiple<T, ID1, ID2>(
+    pub async fn encrypt_multiple<T, ID1>(
         &self,
         package_id: ID1,
         id: Vec<u8>,
         threshold: u8,
-        key_servers: Vec<ID2>,
+        key_servers: Vec<KeyServerConfig>,
         data: Vec<T>,
     ) -> Result<Vec<(EncryptedObject, [u8; 32])>, SealClientError>
     where
         T: Serialize,
         ObjectID: From<ID1>,
-        ObjectID: From<ID2>,
     {
         let data = data
             .into_iter()
@@ -216,7 +232,7 @@ where
     ///         setup.approve_package_id,
     ///         vec![6u8],
     ///         1,
-    ///         vec![setup.key_server_id.clone()],
+    ///         vec![seal_sdk_rs::base_client::KeyServerConfig::new(setup.key_server_id, None)],
     ///         data,
     ///     )
     ///     .await?;
@@ -224,17 +240,16 @@ where
     /// # Ok(())
     /// # }
     /// ```
-    pub async fn encrypt_bytes<ID1, ID2>(
+    pub async fn encrypt_bytes<ID1>(
         &self,
         package_id: ID1,
         id: Vec<u8>,
         threshold: u8,
-        key_servers: Vec<ID2>,
+        key_servers: Vec<KeyServerConfig>,
         data: Vec<u8>,
     ) -> Result<(EncryptedObject, [u8; 32]), SealClientError>
     where
         ObjectID: From<ID1>,
-        ObjectID: From<ID2>,
     {
         let (encrypted, recovery_key) = self
             .encrypt_multiple_bytes(package_id, id, threshold, key_servers, vec![data])
@@ -274,7 +289,7 @@ where
     ///         setup.approve_package_id,
     ///         vec![6u8],
     ///         1,
-    ///         vec![setup.key_server_id.clone()],
+    ///         vec![seal_sdk_rs::base_client::KeyServerConfig::new(setup.key_server_id, None)],
     ///         payloads,
     ///     )
     ///     .await?;
@@ -285,23 +300,18 @@ where
     /// # Ok(())
     /// # }
     /// ```
-    pub async fn encrypt_multiple_bytes<ID1, ID2>(
+    pub async fn encrypt_multiple_bytes<ID1>(
         &self,
         package_id: ID1,
         id: Vec<u8>,
         threshold: u8,
-        key_servers: Vec<ID2>,
+        key_servers: Vec<KeyServerConfig>,
         data: Vec<Vec<u8>>,
     ) -> Result<Vec<(EncryptedObject, [u8; 32])>, SealClientError>
     where
         ObjectID: From<ID1>,
-        ObjectID: From<ID2>,
     {
         let package_id: ObjectID = package_id.into();
-        let key_servers = key_servers
-            .into_iter()
-            .map(ObjectID::from)
-            .collect::<Vec<_>>();
 
         let key_server_info = self.fetch_key_server_info(key_servers.clone()).await?;
         let public_keys_g2 = key_server_info
@@ -311,15 +321,16 @@ where
 
         let public_keys = IBEPublicKeys::BonehFranklinBLS12381(public_keys_g2);
 
-        let key_servers: Vec<ObjectID> = key_servers.into_iter().collect();
-
         let mut results = Vec::with_capacity(data.len());
 
         for data in data {
             let (encrypted_object, recovery_key) = seal_encrypt(
                 package_id.0.into(),
                 id.clone(),
-                key_servers.iter().map(|e| (*e).into()).collect::<Vec<_>>(),
+                key_servers
+                    .iter()
+                    .map(|e| e.object_id.into())
+                    .collect::<Vec<_>>(),
                 &public_keys,
                 threshold,
                 EncryptionInput::Aes256Gcm { data, aad: None },
@@ -334,7 +345,7 @@ where
     #[allow(dead_code)]
     pub async fn key_server_info(
         &self,
-        key_server_ids: Vec<ObjectID>,
+        key_server_ids: Vec<KeyServerConfig>,
     ) -> Result<Vec<KeyServerInfo>, SealClientError> {
         self.fetch_key_server_info(key_server_ids).await
     }
@@ -369,7 +380,7 @@ where
     /// let approve_ptb = DemoTransaction;
     ///
     /// let value: Vec<u8> = client
-    ///     .decrypt_object(&encrypted_bytes, approve_ptb, session_key)
+    ///     .decrypt_object(&encrypted_bytes, approve_ptb, session_key, std::collections::HashMap::new())
     ///     .await?;
     /// # let _ = value;
     /// # Ok(())
@@ -380,13 +391,19 @@ where
         encrypted_object_data: &[u8],
         approve_transaction_data: PTB,
         session_key: &SessionKey,
+        aggregator_urls_for_ker_server: HashMap<ObjectID, String>,
     ) -> Result<T, SealClientError>
     where
         T: DeserializeOwned,
         PTB: BCSSerializableProgrammableTransaction,
     {
         let bytes = self
-            .decrypt_object_bytes(encrypted_object_data, approve_transaction_data, session_key)
+            .decrypt_object_bytes(
+                encrypted_object_data,
+                approve_transaction_data,
+                session_key,
+                aggregator_urls_for_ker_server,
+            )
             .await?;
 
         Ok(bcs::from_bytes::<T>(&bytes)?)
@@ -431,7 +448,7 @@ where
     /// let approve_ptb = DemoTransaction;
     ///
     /// let values: Vec<Vec<u8>> = client
-    ///     .decrypt_multiple_objects(&encrypted_refs, approve_ptb, session_key)
+    ///     .decrypt_multiple_objects(&encrypted_refs, approve_ptb, session_key, std::collections::HashMap::new())
     ///     .await?;
     /// # let _ = values;
     /// # Ok(())
@@ -442,6 +459,7 @@ where
         encrypted_object_data: &[&[u8]],
         approve_transaction_data: PTB,
         session_key: &SessionKey,
+        aggregator_urls_for_ker_server: HashMap<ObjectID, String>,
     ) -> Result<Vec<T>, SealClientError>
     where
         T: DeserializeOwned,
@@ -452,6 +470,7 @@ where
                 encrypted_object_data,
                 approve_transaction_data,
                 session_key,
+                aggregator_urls_for_ker_server,
             )
             .await?
             .into_iter()
@@ -488,7 +507,7 @@ where
     /// let encrypted_bytes = bcs::to_bytes(encrypted).expect("serialize EncryptedObject");
     /// let approve_ptb = DemoTransaction;
     /// let bytes = client
-    ///     .decrypt_object_bytes(&encrypted_bytes, approve_ptb, session_key)
+    ///     .decrypt_object_bytes(&encrypted_bytes, approve_ptb, session_key, std::collections::HashMap::new())
     ///     .await?;
     /// # let _ = bytes;
     /// # Ok(())
@@ -499,6 +518,7 @@ where
         encrypted_object_data: &[u8],
         approve_transaction_data: PTB,
         session_key: &SessionKey,
+        aggregator_urls_for_ker_server: HashMap<ObjectID, String>,
     ) -> Result<Vec<u8>, SealClientError>
     where
         PTB: BCSSerializableProgrammableTransaction,
@@ -508,6 +528,7 @@ where
                 &[encrypted_object_data],
                 approve_transaction_data,
                 session_key,
+                aggregator_urls_for_ker_server,
             )
             .await?
             .into_iter()
@@ -552,7 +573,7 @@ where
     ///     .collect::<Vec<_>>();
     /// let approve_ptb = DemoTransaction;
     /// let decrypted = client
-    ///     .decrypt_multiple_objects_bytes(&encrypted_refs, approve_ptb, session_key)
+    ///     .decrypt_multiple_objects_bytes(&encrypted_refs, approve_ptb, session_key, std::collections::HashMap::new())
     ///     .await?;
     /// # let _ = decrypted;
     /// # Ok(())
@@ -563,6 +584,7 @@ where
         encrypted_objects_data: &[&[u8]],
         approve_transaction_data: PTB,
         session_key: &SessionKey,
+        aggregator_urls_for_ker_server: HashMap<ObjectID, String>,
     ) -> Result<Vec<Vec<u8>>, SealClientError>
     where
         PTB: BCSSerializableProgrammableTransaction,
@@ -578,13 +600,16 @@ where
 
         let first_encrypted_object = encrypted_objects.first().unwrap();
 
-        let service_ids: Vec<ObjectID> = first_encrypted_object
+        let services: Vec<KeyServerConfig> = first_encrypted_object
             .services
             .iter()
-            .map(|(id, _)| *id)
+            .map(|(id, _)| KeyServerConfig {
+                object_id: *id,
+                aggregator_url: aggregator_urls_for_ker_server.get(id).cloned(),
+            })
             .collect();
 
-        let key_server_info = self.fetch_key_server_info(service_ids).await?;
+        let key_server_info = self.fetch_key_server_info(services).await?;
         let servers_public_keys_map = key_server_info
             .iter()
             .map(|info| Ok::<_, SealClientError>((info.object_id, self.decode_public_key(info)?)))
@@ -600,6 +625,7 @@ where
                 signed_request,
                 key_server_info,
                 first_encrypted_object.threshold,
+                &aggregator_urls_for_ker_server,
             )
             .await?
             .into_iter()
@@ -617,17 +643,17 @@ where
 
     async fn fetch_key_server_info(
         &self,
-        key_server_ids: Vec<ObjectID>,
+        key_servers: Vec<KeyServerConfig>,
     ) -> Result<Vec<KeyServerInfo>, SealClientError> {
         let mut key_server_info_futures = vec![];
-        for key_server_id in key_server_ids {
-            let cache_key = KeyServerInfoCacheKey::new(key_server_id);
+        for key_server in key_servers {
+            let cache_key = KeyServerInfoCacheKey::new(key_server.object_id);
 
             let future = async move {
                 self.key_server_info_cache
                     .try_get_with(
                         cache_key,
-                        self.sui_client.get_key_server_info(key_server_id.0),
+                        self.sui_client.get_key_server_info(key_server.object_id.0),
                     )
                     .await
                     .map_err(unwrap_cache_error)
@@ -647,6 +673,7 @@ where
         request: FetchKeyRequest,
         key_servers_info: Vec<KeyServerInfo>,
         threshold: u8,
+        aggregator_urls: &HashMap<ObjectID, String>,
     ) -> Result<Vec<DerivedKeys>, SealClientError> {
         let request_json = request.to_json_string()?;
 
@@ -654,17 +681,23 @@ where
         for server in key_servers_info.iter() {
             let request_bytes = bcs::to_bytes(&request)?;
 
-            let response_future = async {
+            // Use aggregator URL if provided, otherwise fall back to the on-chain server URL.
+            let base_url = aggregator_urls
+                .get(&server.object_id)
+                .cloned()
+                .unwrap_or_else(|| server.url.clone());
+
+            let request_json_clone = request_json.clone();
+            let response_future = async move {
                 let mut headers = HashMap::new();
 
-                headers.insert("Client-Sdk-Type".to_string(), "rust".to_string());
                 headers.insert("Client-Sdk-Version".to_string(), "1.0.0".to_string());
                 headers.insert("Content-Type".to_string(), "application/json".to_string());
 
-                let url = format!("{}/v1/fetch_key", server.url);
+                let url = format!("{}/v1/fetch_key", base_url);
                 let response = self
                     .http_client
-                    .post(&url, headers, request_json.clone())
+                    .post(&url, headers, request_json_clone)
                     .await?;
 
                 if !response.is_success() {

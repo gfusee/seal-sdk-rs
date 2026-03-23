@@ -55,7 +55,7 @@ async fn encrypt_message(
             setup.approve_package_id,
             b"my_id".to_vec(),
             1,
-            vec![setup.key_server_id],
+            vec![seal_sdk_rs::base_client::KeyServerConfig::new(setup.key_server_id, None)],
             b"hello from seal".to_vec(),
         )
         .await?;
@@ -120,6 +120,7 @@ async fn decrypt_message(
             &bcs::to_bytes(&encrypted)?,
             approve_ptb,
             &session_key,
+            std::collections::HashMap::new(),
         )
         .await?;
 
