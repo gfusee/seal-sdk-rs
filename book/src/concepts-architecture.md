@@ -67,6 +67,20 @@ a JWT:
 Handle the session key like a bearer token: keep it safe in memory and drop it
 when you no longer need it.
 
+## Independent and committee key servers
+
+Seal key servers come in two flavors. An **independent** server holds the full
+master secret and serves key requests directly. A **committee** distributes the
+secret across multiple participants via threshold cryptography; an **aggregator**
+collects partial responses and returns the combined result.
+
+The SDK handles both transparently through `KeyServerConfig`. Pass
+`aggregator_url: None` for independent servers and
+`aggregator_url: Some(url)` for committees. During decryption, provide a
+`HashMap<ObjectID, String>` mapping committee key server IDs to their aggregator
+URLs. See the [Committee Servers](./committee-servers.md) chapter for details
+and examples.
+
 ## Recovery keys and operational security
 
 Every encrypt helper returns `(EncryptedObject, [u8; 32])`. The second value is

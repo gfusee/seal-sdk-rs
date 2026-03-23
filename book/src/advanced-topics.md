@@ -7,93 +7,16 @@ how to pick the right feature flags and error strategy when you deploy the SDK.
 
 You can run `BaseSealClient` with a different version of the Sui SDK. Implement
 the [`SuiClient`](../../src/sui_client.rs) trait for the client type you want to
-use and update your `Cargo.toml` to point at that version. The snippet below is
-based on the default implementation for `sui_sdk::SuiClient` and can serve as a
-starting point:
+use and update your `Cargo.toml` to point at that version.
 
-```rust,no_run
-use seal_sdk_rs::base_client::KeyServerInfo;
-use seal_sdk_rs::generic_types::ObjectID;
-use seal_sdk_rs::sui_client::SuiClient;
-use async_trait::async_trait;
-use serde_json::Value;
-use sui_sdk::rpc_types::{SuiMoveValue, SuiParsedData};
-use sui_types::TypeTag;
-use sui_types::dynamic_field::DynamicFieldName;
+The built-in implementation tries the V2 dynamic field first (key `2`) and falls
+back to V1 (key `1`). V2 supports both independent and committee key servers via
+a `ServerType` enum. For committee servers the on-chain URL is empty because
+the aggregator URL is provided externally through `KeyServerConfig`.
 
-#[derive(Debug, thiserror::Error)]
-pub enum CustomSuiError {
-    #[error("Sui SDK error: {0}")]
-    SuiSdk(#[from] sui_sdk::error::Error),
-    #[error("Missing object data for {object_id}")]
-    Missing { object_id: sui_types::base_types::ObjectID },
-    #[error("Unexpected data shape for {object_id}")]
-    Invalid { object_id: sui_types::base_types::ObjectID },
-}
-
-#[async_trait]
-impl SuiClient for sui_sdk::SuiClient {
-    type Error = CustomSuiError;
-
-    async fn get_key_server_info(
-        &self,
-        key_server_id: [u8; 32],
-    ) -> Result<KeyServerInfo, Self::Error> {
-        let key_server_id = sui_types::base_types::ObjectID::new(key_server_id);
-        let response = self
-            .read_api()
-            .get_dynamic_field_object(
-                key_server_id,
-                DynamicFieldName {
-                    type_: TypeTag::U64,
-                    value: Value::String("1".to_string()),
-                },
-            )
-            .await?;
-
-        let object_data = response.data.ok_or(CustomSuiError::Missing { object_id: key_server_id })?;
-        let content = object_data.content.ok_or(CustomSuiError::Missing { object_id: key_server_id })?;
-
-        let parsed = match content {
-            SuiParsedData::MoveObject(obj) => obj,
-            _ => return Err(CustomSuiError::Invalid { object_id: key_server_id }),
-        };
-
-        let value_struct = match parsed.fields.field_value("value") {
-            Some(SuiMoveValue::Struct(s)) => s,
-            _ => return Err(CustomSuiError::Invalid { object_id: key_server_id }),
-        };
-
-        let url = match value_struct.field_value("url") {
-            Some(SuiMoveValue::String(url)) => url,
-            _ => return Err(CustomSuiError::Invalid { object_id: key_server_id }),
-        };
-
-        let name = match value_struct.field_value("name") {
-            Some(SuiMoveValue::String(name)) => name,
-            _ => return Err(CustomSuiError::Invalid { object_id: key_server_id }),
-        };
-
-        let public_key_bytes = match value_struct.field_value("pk") {
-            Some(SuiMoveValue::Vector(bytes)) => bytes
-                .into_iter()
-                .map(|value| match value {
-                    SuiMoveValue::Number(byte) => u8::try_from(byte).map_err(|_| CustomSuiError::Invalid { object_id: key_server_id }),
-                    _ => Err(CustomSuiError::Invalid { object_id: key_server_id }),
-                })
-                .collect::<Result<Vec<_>, _>>()?,
-            _ => return Err(CustomSuiError::Invalid { object_id: key_server_id }),
-        };
-
-        Ok(KeyServerInfo {
-            object_id: ObjectID(key_server_id.into_bytes()),
-            name,
-            url,
-            public_key: hex::encode(public_key_bytes),
-        })
-    }
-}
-```
+If you write your own implementation, handle both versions to stay compatible
+with older and newer key servers. See the default implementation in
+`src/native_sui_sdk/client/sui_client.rs` for reference.
 
 Compile `seal-sdk-rs` against your chosen dependency version and the new
 implementation becomes active.
