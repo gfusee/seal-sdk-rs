@@ -25,6 +25,7 @@ use sui_sdk::SuiClientBuilder;
 use sui_types::Identifier;
 use sui_types::programmable_transaction_builder::ProgrammableTransactionBuilder;
 use seal_sdk_rs::base_client::KeyServerConfig;
+use seal_sdk_rs::error::SealClientError;
 
 pub mod utils;
 
@@ -659,6 +660,273 @@ async fn test_encrypt_decrypt_bytes_three_servers_threshold_three_one_crash() ->
     if decrypted_result.is_ok() {
         bail!("Should not succeed!")
     }
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn test_encrypt_decrypt_bytes_committee() -> anyhow::Result<()> {
+    let arc_setup = setup().await?;
+    let mut setup_guard = arc_setup.lock_unchecked();
+    let setup = setup_guard.deref_mut().as_mut().unwrap();
+
+    let sui_client = SuiClientBuilder::default().build(&setup.rpc_url).await?;
+
+    let seal_client = SealClient::new(sui_client);
+
+    let committee = &setup.committee_instance;
+    let data_to_encrypt = vec![0u8, 1, 2, 3];
+    let data_id = vec![6u8];
+
+    let key_servers = KeyServerConfig::new(
+        committee.key_server_id,
+        Some(committee.aggregator_url.clone()),
+    );
+
+    let (encrypted, _) = seal_client
+        .encrypt_bytes(
+            committee.seal_package_id,
+            data_id.clone(),
+            1,
+            vec![key_servers],
+            data_to_encrypt.clone(),
+        )
+        .await?;
+
+    let mut approve_builder = ProgrammableTransactionBuilder::new();
+    let id_arg = approve_builder.pure(data_id)?;
+
+    _ = approve_builder.programmable_move_call(
+        setup.approve_package_id.into(),
+        Identifier::from_str("wildcard")?,
+        Identifier::from_str("seal_approve")?,
+        vec![],
+        vec![id_arg],
+    );
+
+    let ptb = approve_builder.finish();
+
+    let session_key = SessionKey::new(
+        setup.approve_package_id,
+        1,
+        &mut setup.approve_package_deployer,
+    )
+    .await?;
+
+    let aggregator_urls = HashMap::from([(
+        committee.key_server_id,
+        committee.aggregator_url.clone(),
+    )]);
+
+    let decrypted = seal_client
+        .decrypt_object_bytes(&bcs::to_bytes(&encrypted)?, ptb, &session_key, aggregator_urls)
+        .await?;
+
+    assert_eq!(decrypted, data_to_encrypt);
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn test_encrypt_decrypt_bytes_committee_wrong_aggregator_url() -> anyhow::Result<()> {
+    let arc_setup = setup().await?;
+    let mut setup_guard = arc_setup.lock_unchecked();
+    let setup = setup_guard.deref_mut().as_mut().unwrap();
+
+    let sui_client = SuiClientBuilder::default().build(&setup.rpc_url).await?;
+
+    let seal_client = SealClient::new(sui_client);
+
+    let committee = &setup.committee_instance;
+    let data_to_encrypt = vec![0u8, 1, 2, 3];
+    let data_id = vec![6u8];
+
+    let key_servers = KeyServerConfig::new(
+        committee.key_server_id,
+        Some(committee.aggregator_url.clone()),
+    );
+
+    let (encrypted, _) = seal_client
+        .encrypt_bytes(
+            committee.seal_package_id,
+            data_id.clone(),
+            1,
+            vec![key_servers],
+            data_to_encrypt.clone(),
+        )
+        .await?;
+
+    let mut approve_builder = ProgrammableTransactionBuilder::new();
+    let id_arg = approve_builder.pure(data_id)?;
+
+    _ = approve_builder.programmable_move_call(
+        setup.approve_package_id.into(),
+        Identifier::from_str("wildcard")?,
+        Identifier::from_str("seal_approve")?,
+        vec![],
+        vec![id_arg],
+    );
+
+    let ptb = approve_builder.finish();
+
+    let session_key = SessionKey::new(
+        setup.approve_package_id,
+        1,
+        &mut setup.approve_package_deployer,
+    )
+    .await?;
+
+    let wrong_aggregator_urls = HashMap::from([(
+        committee.key_server_id,
+        "http://localhost:1".to_string(),
+    )]);
+
+    let decrypted_result = seal_client
+        .decrypt_object_bytes(&bcs::to_bytes(&encrypted)?, ptb, &session_key, wrong_aggregator_urls)
+        .await;
+
+    assert!(
+        matches!(
+            decrypted_result,
+            Err(SealClientError::InsufficientKeys { received: 0, threshold: 1 })
+        ),
+        "Expected InsufficientKeys error, got: {:?}",
+        decrypted_result
+    );
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn test_encrypt_decrypt_bytes_committee_no_aggregator_url() -> anyhow::Result<()> {
+    let arc_setup = setup().await?;
+    let mut setup_guard = arc_setup.lock_unchecked();
+    let setup = setup_guard.deref_mut().as_mut().unwrap();
+
+    let sui_client = SuiClientBuilder::default().build(&setup.rpc_url).await?;
+
+    let seal_client = SealClient::new(sui_client);
+
+    let committee = &setup.committee_instance;
+    let data_to_encrypt = vec![0u8, 1, 2, 3];
+    let data_id = vec![6u8];
+
+    let key_servers = KeyServerConfig::new(
+        committee.key_server_id,
+        None,
+    );
+
+    let (encrypted, _) = seal_client
+        .encrypt_bytes(
+            committee.seal_package_id,
+            data_id.clone(),
+            1,
+            vec![key_servers],
+            data_to_encrypt.clone(),
+        )
+        .await?;
+
+    let mut approve_builder = ProgrammableTransactionBuilder::new();
+    let id_arg = approve_builder.pure(data_id)?;
+
+    _ = approve_builder.programmable_move_call(
+        setup.approve_package_id.into(),
+        Identifier::from_str("wildcard")?,
+        Identifier::from_str("seal_approve")?,
+        vec![],
+        vec![id_arg],
+    );
+
+    let ptb = approve_builder.finish();
+
+    let session_key = SessionKey::new(
+        setup.approve_package_id,
+        1,
+        &mut setup.approve_package_deployer,
+    )
+    .await?;
+
+    let decrypted_result = seal_client
+        .decrypt_object_bytes(&bcs::to_bytes(&encrypted)?, ptb, &session_key, HashMap::new())
+        .await;
+
+    assert!(
+        matches!(
+            decrypted_result,
+            Err(SealClientError::InsufficientKeys { received: 0, threshold: 1 })
+        ),
+        "Expected InsufficientKeys error, got: {:?}",
+        decrypted_result
+    );
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn test_encrypt_decrypt_bytes_independent_with_aggregator_url() -> anyhow::Result<()> {
+    let arc_setup = setup().await?;
+    let mut setup_guard = arc_setup.lock_unchecked();
+    let setup = setup_guard.deref_mut().as_mut().unwrap();
+
+    let sui_client = SuiClientBuilder::default().build(&setup.rpc_url).await?;
+
+    let seal_client = SealClient::new(sui_client);
+
+    let data_to_encrypt = vec![0u8, 1, 2, 3];
+    let data_id = vec![6u8];
+
+    let key_servers = KeyServerConfig::new(
+        setup.seal_instances[0].key_server_id,
+        Some("http://localhost:9999".to_string()),
+    );
+
+    let (encrypted, _) = seal_client
+        .encrypt_bytes(
+            setup.approve_package_id,
+            data_id.clone(),
+            1,
+            vec![key_servers],
+            data_to_encrypt.clone(),
+        )
+        .await?;
+
+    let mut approve_builder = ProgrammableTransactionBuilder::new();
+    let id_arg = approve_builder.pure(data_id)?;
+
+    _ = approve_builder.programmable_move_call(
+        setup.approve_package_id.into(),
+        Identifier::from_str("wildcard")?,
+        Identifier::from_str("seal_approve")?,
+        vec![],
+        vec![id_arg],
+    );
+
+    let ptb = approve_builder.finish();
+
+    let session_key = SessionKey::new(
+        setup.approve_package_id,
+        1,
+        &mut setup.approve_package_deployer,
+    )
+    .await?;
+
+    let aggregator_urls = HashMap::from([(
+        setup.seal_instances[0].key_server_id,
+        "http://localhost:9999".to_string(),
+    )]);
+
+    let decrypted_result = seal_client
+        .decrypt_object_bytes(&bcs::to_bytes(&encrypted)?, ptb, &session_key, aggregator_urls)
+        .await;
+
+    assert!(
+        matches!(
+            decrypted_result,
+            Err(SealClientError::InsufficientKeys { received: 0, threshold: 1 })
+        ),
+        "Expected InsufficientKeys error, got: {:?}",
+        decrypted_result
+    );
 
     Ok(())
 }

@@ -37,13 +37,16 @@ use tokio::net::TcpListener;
 use tokio::sync::OnceCell;
 
 const LOCALNET_IMAGE_NAME: &str = "ghcr.io/gfusee/sui-localnet/sui-localnet";
-const LOCALNET_IMAGE_TAG: &str = "0.0.15";
+const LOCALNET_IMAGE_TAG: &str = "0.0.16";
 const LOCALNET_CONTAINER_NAME: &str = "seal-sdk-rs-localnet";
 
 const SEAL_SERVER_IMAGE_NAME: &str = "ghcr.io/gfusee/sui-localnet/seal-server";
-const SEAL_SERVER_IMAGE_TAG: &str = "0.0.9";
+const SEAL_SERVER_IMAGE_TAG: &str = "0.0.16";
 const SEAL_SERVER_CONTAINER_NAME: &str = "seal-sdk-rs-seal-server";
 const SEAL_SERVER_INTERNAL_PORT: u16 = 2024;
+
+const SEAL_AGGREGATOR_INTERNAL_PORT: u16 = 2024;
+const SEAL_COMMITTEE_CONTAINER_NAME: &str = "seal-sdk-rs-committee";
 
 const DOCKER_NETWORK: &str = "seal-sdk-rs";
 
@@ -62,6 +65,7 @@ pub struct Setup {
     pub localnet_container: ContainerAsync<GenericImage>,
     pub seal_instances: [SealInstance; SEAL_SERVER_COUNT],
     pub extra_seal_servers_count: usize,
+    pub committee_instance: CommitteeInstance,
 }
 
 impl Setup {
@@ -89,12 +93,30 @@ pub struct SealInstance {
     pub public_key: [u8; 96],
 }
 
+pub struct CommitteeInstance {
+    pub seal_container: ContainerAsync<GenericImage>,
+    pub key_server_id: ObjectID,
+    pub seal_package_id: ObjectID,
+    pub aggregator_url: String,
+    pub public_key: [u8; 96],
+}
+
 #[derive(Deserialize, Debug)]
 struct SealInfo {
     seal_package_id: String,
     #[serde(rename = "key_server_object_id")]
     key_server_package_id: String,
     public_key: String,
+}
+
+#[derive(Deserialize, Debug)]
+#[allow(dead_code)]
+struct CommitteeSealInfo {
+    seal_package_id: String,
+    #[serde(rename = "key_server_object_id")]
+    key_server_package_id: String,
+    public_key: String,
+    seal_server_url: String,
 }
 
 #[derive(Clone)]
@@ -171,6 +193,8 @@ pub async fn init_setup() -> anyhow::Result<Setup> {
     let approve_package_id =
         deploy_approve_package(&rpc_external_url, &mut deployer_wallet).await?;
 
+    let committee_instance = create_committee_instance(0).await?;
+
     let setup = Setup {
         rpc_url: rpc_external_url,
         approve_package_id,
@@ -178,6 +202,7 @@ pub async fn init_setup() -> anyhow::Result<Setup> {
         localnet_container: localnet,
         seal_instances,
         extra_seal_servers_count: 0,
+        committee_instance,
     };
 
     Ok(setup)
@@ -238,6 +263,71 @@ async fn create_seal_instance(index: usize) -> anyhow::Result<SealInstance> {
         key_server_id: key_server_package_id.parse()?,
         seal_package_id: seal_package_id.parse()?,
         seal_server_url: seal_server_external_url,
+        public_key,
+    })
+}
+
+async fn create_committee_instance(index: usize) -> anyhow::Result<CommitteeInstance> {
+    let free_port = find_free_port().await?;
+
+    let aggregator_external_url = format!("http://localhost:{free_port}");
+    let container_name = format!("{SEAL_COMMITTEE_CONTAINER_NAME}-{index}");
+
+    let seal = GenericImage::new(SEAL_SERVER_IMAGE_NAME, SEAL_SERVER_IMAGE_TAG)
+        .with_mapped_port(free_port, ContainerPort::Tcp(SEAL_AGGREGATOR_INTERNAL_PORT))
+        .with_network(DOCKER_NETWORK)
+        .with_container_name(container_name)
+        .with_env_var("NODE_URL", format!("http://{LOCALNET_CONTAINER_NAME}:9000"))
+        .with_env_var(
+            "FAUCET_URL",
+            format!("http://{LOCALNET_CONTAINER_NAME}:9123"),
+        )
+        .with_env_var("SEAL_MODE", "committee")
+        .with_env_var("SEAL_COMMITTEE_SIZE", "3")
+        .with_env_var("SEAL_COMMITTEE_THRESHOLD", "2")
+        .with_env_var("SEAL_SERVER_URL", aggregator_external_url.clone())
+        .start()
+        .await?;
+
+    let aggregator_external_port = seal
+        .get_host_port_ipv4(SEAL_AGGREGATOR_INTERNAL_PORT)
+        .await?;
+
+    wait_for_seal_server(aggregator_external_port).await;
+
+    let mut result = seal
+        .exec(ExecCommand::new(["cat", "/shared/seal.json"]))
+        .await?;
+
+    let mut stdout = String::new();
+    let mut reader = result.stdout();
+
+    reader.read_to_string(&mut stdout).await?;
+
+    let info: CommitteeSealInfo =
+        serde_json::from_str(&stdout).map_err(|_| anyhow!("Cannot get committee seal info"))?;
+
+    let CommitteeSealInfo {
+        seal_package_id,
+        key_server_package_id,
+        public_key,
+        seal_server_url: _,
+    } = info;
+
+    let public_key_hex = public_key.strip_prefix("0x").unwrap_or(&public_key);
+    let public_key_bytes = hex::decode(public_key_hex)?;
+    let public_key: [u8; 96] = public_key_bytes.try_into().map_err(|bytes: Vec<u8>| {
+        anyhow!(
+            "Invalid public key length: expected 96 bytes, got {}",
+            bytes.len()
+        )
+    })?;
+
+    Ok(CommitteeInstance {
+        seal_container: seal,
+        key_server_id: key_server_package_id.parse()?,
+        seal_package_id: seal_package_id.parse()?,
+        aggregator_url: aggregator_external_url,
         public_key,
     })
 }

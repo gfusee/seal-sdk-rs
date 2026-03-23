@@ -31,9 +31,11 @@ seal-sdk-rs = { git = "https://github.com/gfusee/seal-sdk-rs", tag = "0.0.2" }
 A full detailed flow is available in the [guide](https://gfusee.github.io/seal-sdk-rs).
 
 ```rust,no_run
+use seal_sdk_rs::base_client::KeyServerConfig;
 use seal_sdk_rs::native_sui_sdk::client::seal_client::SealClient;
 use seal_sdk_rs::session_key::SessionKey;
 use std::str::FromStr;
+use std::collections::HashMap;
 use seal_sdk_rs::generic_types::ObjectID;
 use seal_sdk_rs::native_sui_sdk::sui_sdk::SuiClientBuilder;
 use seal_sdk_rs::native_sui_sdk::sui_sdk::wallet_context::WalletContext;
@@ -54,7 +56,7 @@ async fn encrypt_and_decrypt(
             package_id,
             b"demo-id".to_vec(),
             1,
-            vec![key_server_id],
+            vec![KeyServerConfig::new(key_server_id, None)],
             b"hello seal".to_vec(),
         )
         .await?;
@@ -73,7 +75,7 @@ async fn encrypt_and_decrypt(
     );
 
     let plaintext = client
-        .decrypt_object_bytes(&bcs::to_bytes(&encrypted)?, builder.finish(), &session_key)
+        .decrypt_object_bytes(&bcs::to_bytes(&encrypted)?, builder.finish(), &session_key, HashMap::new())
         .await?;
 
     assert_eq!(plaintext, b"hello seal");

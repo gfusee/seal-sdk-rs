@@ -61,7 +61,7 @@ use tokio::sync::Mutex;
 ///             )?,
 ///             b"demo-data".to_vec(),
 ///             1,
-///             vec![key_server_id],
+///             vec![seal_sdk_rs::base_client::KeyServerConfig::new(key_server_id, None)],
 ///             b"secret payload".to_vec(),
 ///         )
 ///         .await?;
@@ -136,7 +136,7 @@ impl SealClient {
 ///             )?,
 ///             b"demo-data".to_vec(),
 ///             1,
-///             vec![key_server_id],
+///             vec![seal_sdk_rs::base_client::KeyServerConfig::new(key_server_id, None)],
 ///             b"secret payload".to_vec(),
 ///         )
 ///         .await?;
@@ -218,7 +218,7 @@ pub mod moka {
     ///             )?,
     ///             b"demo-data".to_vec(),
     ///             1,
-    ///             vec![key_server_id],
+    ///             vec![seal_sdk_rs::base_client::KeyServerConfig::new(key_server_id, None)],
     ///             b"secret payload".to_vec(),
     ///         )
     ///         .await?;

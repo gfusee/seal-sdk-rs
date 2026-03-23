@@ -127,7 +127,7 @@ where
     ///         setup.approve_package_id,
     ///         vec![6u8],
     ///         1,
-    ///         vec![setup.key_server_id.clone()],
+    ///         vec![seal_sdk_rs::base_client::KeyServerConfig::new(setup.key_server_id, None)],
     ///         17u64,
     ///     )
     ///     .await?;
@@ -177,7 +177,7 @@ where
     ///         setup.approve_package_id,
     ///         vec![6u8],
     ///         1,
-    ///         vec![setup.key_server_id.clone()],
+    ///         vec![seal_sdk_rs::base_client::KeyServerConfig::new(setup.key_server_id, None)],
     ///         vec![10u64, 17u64],
     ///     )
     ///     .await?;
@@ -232,7 +232,7 @@ where
     ///         setup.approve_package_id,
     ///         vec![6u8],
     ///         1,
-    ///         vec![setup.key_server_id.clone()],
+    ///         vec![seal_sdk_rs::base_client::KeyServerConfig::new(setup.key_server_id, None)],
     ///         data,
     ///     )
     ///     .await?;
@@ -289,7 +289,7 @@ where
     ///         setup.approve_package_id,
     ///         vec![6u8],
     ///         1,
-    ///         vec![setup.key_server_id.clone()],
+    ///         vec![seal_sdk_rs::base_client::KeyServerConfig::new(setup.key_server_id, None)],
     ///         payloads,
     ///     )
     ///     .await?;
@@ -377,7 +377,7 @@ where
     /// let approve_ptb = DemoTransaction;
     ///
     /// let value: Vec<u8> = client
-    ///     .decrypt_object(&encrypted_bytes, approve_ptb, session_key)
+    ///     .decrypt_object(&encrypted_bytes, approve_ptb, session_key, std::collections::HashMap::new())
     ///     .await?;
     /// # let _ = value;
     /// # Ok(())
@@ -440,7 +440,7 @@ where
     /// let approve_ptb = DemoTransaction;
     ///
     /// let values: Vec<Vec<u8>> = client
-    ///     .decrypt_multiple_objects(&encrypted_refs, approve_ptb, session_key)
+    ///     .decrypt_multiple_objects(&encrypted_refs, approve_ptb, session_key, std::collections::HashMap::new())
     ///     .await?;
     /// # let _ = values;
     /// # Ok(())
@@ -499,7 +499,7 @@ where
     /// let encrypted_bytes = bcs::to_bytes(encrypted).expect("serialize EncryptedObject");
     /// let approve_ptb = DemoTransaction;
     /// let bytes = client
-    ///     .decrypt_object_bytes(&encrypted_bytes, approve_ptb, session_key)
+    ///     .decrypt_object_bytes(&encrypted_bytes, approve_ptb, session_key, std::collections::HashMap::new())
     ///     .await?;
     /// # let _ = bytes;
     /// # Ok(())
@@ -565,7 +565,7 @@ where
     ///     .collect::<Vec<_>>();
     /// let approve_ptb = DemoTransaction;
     /// let decrypted = client
-    ///     .decrypt_multiple_objects_bytes(&encrypted_refs, approve_ptb, session_key)
+    ///     .decrypt_multiple_objects_bytes(&encrypted_refs, approve_ptb, session_key, std::collections::HashMap::new())
     ///     .await?;
     /// # let _ = decrypted;
     /// # Ok(())
@@ -619,6 +619,7 @@ where
                 signed_request,
                 key_server_info,
                 first_encrypted_object.threshold,
+                &aggregator_urls_for_ker_server,
             )
             .await?
             .into_iter()
@@ -666,6 +667,7 @@ where
         request: FetchKeyRequest,
         key_servers_info: Vec<KeyServerInfo>,
         threshold: u8,
+        aggregator_urls: &HashMap<ObjectID, String>,
     ) -> Result<Vec<DerivedKeys>, SealClientError> {
         let request_json = request.to_json_string()?;
 
@@ -673,17 +675,24 @@ where
         for server in key_servers_info.iter() {
             let request_bytes = bcs::to_bytes(&request)?;
 
-            let response_future = async {
+            // Use aggregator URL if provided, otherwise fall back to the on-chain server URL.
+            let base_url = aggregator_urls
+                .get(&server.object_id)
+                .cloned()
+                .unwrap_or_else(|| server.url.clone());
+
+            let request_json_clone = request_json.clone();
+            let response_future = async move {
                 let mut headers = HashMap::new();
 
                 headers.insert("Client-Sdk-Type".to_string(), "rust".to_string());
                 headers.insert("Client-Sdk-Version".to_string(), "1.0.0".to_string());
                 headers.insert("Content-Type".to_string(), "application/json".to_string());
 
-                let url = format!("{}/v1/fetch_key", server.url);
+                let url = format!("{}/v1/fetch_key", base_url);
                 let response = self
                     .http_client
-                    .post(&url, headers, request_json.clone())
+                    .post(&url, headers, request_json_clone)
                     .await?;
 
                 if !response.is_success() {
