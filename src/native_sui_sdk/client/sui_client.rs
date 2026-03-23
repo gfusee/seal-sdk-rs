@@ -262,16 +262,14 @@ impl SuiClientKeyServerExt for sui_sdk::SuiClient {
         let url = match server_type_value {
             SuiMoveValue::Variant(variant) => {
                 match variant.variant.as_str() {
-                    "Independent" => {
-                        match variant.fields.get("url") {
-                            Some(SuiMoveValue::String(url)) => url.clone(),
-                            _ => {
-                                return Err(SuiClientError::MissingKeyServerField {
-                                    field_name: "server_type.Independent.url".to_string(),
-                                });
-                            }
+                    "Independent" => match variant.fields.get("url") {
+                        Some(SuiMoveValue::String(url)) => url.clone(),
+                        _ => {
+                            return Err(SuiClientError::MissingKeyServerField {
+                                field_name: "server_type.Independent.url".to_string(),
+                            });
                         }
-                    }
+                    },
                     "Committee" => {
                         // Committee key servers don't have a single URL.
                         // The aggregator URL is provided externally via KeyServerConfig.

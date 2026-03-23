@@ -327,7 +327,10 @@ where
             let (encrypted_object, recovery_key) = seal_encrypt(
                 package_id.0.into(),
                 id.clone(),
-                key_servers.iter().map(|e| e.object_id.into()).collect::<Vec<_>>(),
+                key_servers
+                    .iter()
+                    .map(|e| e.object_id.into())
+                    .collect::<Vec<_>>(),
                 &public_keys,
                 threshold,
                 EncryptionInput::Aes256Gcm { data, aad: None },
@@ -395,7 +398,12 @@ where
         PTB: BCSSerializableProgrammableTransaction,
     {
         let bytes = self
-            .decrypt_object_bytes(encrypted_object_data, approve_transaction_data, session_key, aggregator_urls_for_ker_server)
+            .decrypt_object_bytes(
+                encrypted_object_data,
+                approve_transaction_data,
+                session_key,
+                aggregator_urls_for_ker_server,
+            )
             .await?;
 
         Ok(bcs::from_bytes::<T>(&bytes)?)
@@ -520,7 +528,7 @@ where
                 &[encrypted_object_data],
                 approve_transaction_data,
                 session_key,
-                aggregator_urls_for_ker_server
+                aggregator_urls_for_ker_server,
             )
             .await?
             .into_iter()
@@ -595,11 +603,9 @@ where
         let services: Vec<KeyServerConfig> = first_encrypted_object
             .services
             .iter()
-            .map(|(id, _)| {
-                KeyServerConfig {
-                    object_id: *id,
-                    aggregator_url: aggregator_urls_for_ker_server.get(id).cloned(),
-                }
+            .map(|(id, _)| KeyServerConfig {
+                object_id: *id,
+                aggregator_url: aggregator_urls_for_ker_server.get(id).cloned(),
             })
             .collect();
 
