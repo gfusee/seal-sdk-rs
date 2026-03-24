@@ -10,7 +10,7 @@ Add the crate to your project:
 
 ```toml
 [dependencies]
-seal-sdk-rs = { git = "https://github.com/gfusee/seal-sdk-rs", tag = "0.0.2" }
+seal-sdk-rs = { git = "https://github.com/gfusee/seal-sdk-rs", tag = "0.0.5" }
 ```
 
 > **Info:** The examples build a `WalletContext` from a normal Sui CLI config
