@@ -29,21 +29,20 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="theme-color" content="#ffffff">
 
-        <link rel="icon" href="favicon.svg">
-        <link rel="shortcut icon" href="favicon.png">
-        <link rel="stylesheet" href="css/variables.css">
-        <link rel="stylesheet" href="css/general.css">
-        <link rel="stylesheet" href="css/chrome.css">
-        <link rel="stylesheet" href="css/print.css" media="print">
+        <link rel="icon" href="favicon-de23e50b.svg">
+        <link rel="shortcut icon" href="favicon-8114d1fc.png">
+        <link rel="stylesheet" href="css/variables-8adf115d.css">
+        <link rel="stylesheet" href="css/general-2459343d.css">
+        <link rel="stylesheet" href="css/chrome-ae938929.css">
+        <link rel="stylesheet" href="css/print-9e4910d8.css" media="print">
 
         <!-- Fonts -->
-        <link rel="stylesheet" href="FontAwesome/css/font-awesome.css">
-        <link rel="stylesheet" href="fonts/fonts.css">
+        <link rel="stylesheet" href="fonts/fonts-9644e21d.css">
 
         <!-- Highlight.js Stylesheets -->
-        <link rel="stylesheet" id="highlight-css" href="highlight.css">
-        <link rel="stylesheet" id="tomorrow-night-css" href="tomorrow-night.css">
-        <link rel="stylesheet" id="ayu-highlight-css" href="ayu-highlight.css">
+        <link rel="stylesheet" id="mdbook-highlight-css" href="highlight-493f70e1.css">
+        <link rel="stylesheet" id="mdbook-tomorrow-night-css" href="tomorrow-night-4c0ae647.css">
+        <link rel="stylesheet" id="mdbook-ayu-highlight-css" href="ayu-highlight-3fdfc3ac.css">
 
         <!-- Custom theme stylesheets -->
 
@@ -53,10 +52,10 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex.js";
+            window.path_to_searchindex_js = "searchindex-02270dd6.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="toc.js"></script>
+        <script src="toc-c99c71f3.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -70,7 +69,7 @@
             </div>
         </div>
     </div>
-    <div id="body-container">
+    <div id="mdbook-body-container">
         <!-- Work around some values being stored in localStorage wrapped in quotes -->
         <script>
             try {
@@ -99,12 +98,12 @@
             html.classList.add("js");
         </script>
 
-        <input type="checkbox" id="sidebar-toggle-anchor" class="hidden">
+        <input type="checkbox" id="mdbook-sidebar-toggle-anchor" class="hidden">
 
         <!-- Hide / unhide sidebar before it is displayed -->
         <script>
             let sidebar = null;
-            const sidebar_toggle = document.getElementById("sidebar-toggle-anchor");
+            const sidebar_toggle = document.getElementById("mdbook-sidebar-toggle-anchor");
             if (document.body.clientWidth >= 1080) {
                 try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
                 sidebar = sidebar || 'visible';
@@ -119,39 +118,39 @@
             }
         </script>
 
-        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+        <nav id="mdbook-sidebar" class="sidebar" aria-label="Table of contents">
             <!-- populated by js -->
             <mdbook-sidebar-scrollbox class="sidebar-scrollbox"></mdbook-sidebar-scrollbox>
             <noscript>
                 <iframe class="sidebar-iframe-outer" src="toc.html"></iframe>
             </noscript>
-            <div id="sidebar-resize-handle" class="sidebar-resize-handle">
+            <div id="mdbook-sidebar-resize-handle" class="sidebar-resize-handle">
                 <div class="sidebar-resize-indicator"></div>
             </div>
         </nav>
 
-        <div id="page-wrapper" class="page-wrapper">
+        <div id="mdbook-page-wrapper" class="page-wrapper">
 
             <div class="page">
-                <div id="menu-bar-hover-placeholder"></div>
-                <div id="menu-bar" class="menu-bar sticky">
+                <div id="mdbook-menu-bar-hover-placeholder"></div>
+                <div id="mdbook-menu-bar" class="menu-bar sticky">
                     <div class="left-buttons">
-                        <label id="sidebar-toggle" class="icon-button" for="sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
-                            <i class="fa fa-bars"></i>
+                        <label id="mdbook-sidebar-toggle" class="icon-button" for="mdbook-sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="mdbook-sidebar">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M0 96C0 78.3 14.3 64 32 64H416c17.7 0 32 14.3 32 32s-14.3 32-32 32H32C14.3 128 0 113.7 0 96zM0 256c0-17.7 14.3-32 32-32H416c17.7 0 32 14.3 32 32s-14.3 32-32 32H32c-17.7 0-32-14.3-32-32zM448 416c0 17.7-14.3 32-32 32H32c-17.7 0-32-14.3-32-32s14.3-32 32-32H416c17.7 0 32 14.3 32 32z"/></svg></span>
                         </label>
-                        <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
-                            <i class="fa fa-paint-brush"></i>
+                        <button id="mdbook-theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="mdbook-theme-list">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M371.3 367.1c27.3-3.9 51.9-19.4 67.2-42.9L600.2 74.1c12.6-19.5 9.4-45.3-7.6-61.2S549.7-4.4 531.1 9.6L294.4 187.2c-24 18-38.2 46.1-38.4 76.1L371.3 367.1zm-19.6 25.4l-116-104.4C175.9 290.3 128 339.6 128 400c0 3.9 .2 7.8 .6 11.6c1.8 17.5-10.2 36.4-27.8 36.4H96c-17.7 0-32 14.3-32 32s14.3 32 32 32H240c61.9 0 112-50.1 112-112c0-2.5-.1-5-.2-7.5z"/></svg></span>
                         </button>
-                        <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
-                            <li role="none"><button role="menuitem" class="theme" id="default_theme">Auto</button></li>
-                            <li role="none"><button role="menuitem" class="theme" id="light">Light</button></li>
-                            <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
-                            <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
-                            <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
-                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                        <ul id="mdbook-theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-default_theme">Auto</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-light">Light</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-ayu">Ayu</button></li>
                         </ul>
-                        <button id="search-toggle" class="icon-button" type="button" title="Search (`/`)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="/ s" aria-controls="searchbar">
-                            <i class="fa fa-search"></i>
+                        <button id="mdbook-search-toggle" class="icon-button" type="button" title="Search (`/`)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="/ s" aria-controls="mdbook-searchbar">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M416 208c0 45.9-14.9 88.3-40 122.7L502.6 457.4c12.5 12.5 12.5 32.8 0 45.3s-32.8 12.5-45.3 0L330.7 376c-34.4 25.2-76.8 40-122.7 40C93.1 416 0 322.9 0 208S93.1 0 208 0S416 93.1 416 208zM208 352c79.5 0 144-64.5 144-144s-64.5-144-144-144S64 128.5 64 208s64.5 144 144 144z"/></svg></span>
                         </button>
                     </div>
 
@@ -159,38 +158,38 @@
 
                     <div class="right-buttons">
                         <a href="print.html" title="Print this book" aria-label="Print this book">
-                            <i id="print-button" class="fa fa-print"></i>
+                            <span class=fa-svg id="print-button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M128 0C92.7 0 64 28.7 64 64v96h64V64H354.7L384 93.3V160h64V93.3c0-17-6.7-33.3-18.7-45.3L400 18.7C388 6.7 371.7 0 354.7 0H128zM384 352v32 64H128V384 368 352H384zm64 32h32c17.7 0 32-14.3 32-32V256c0-35.3-28.7-64-64-64H64c-35.3 0-64 28.7-64 64v96c0 17.7 14.3 32 32 32H64v64c0 35.3 28.7 64 64 64H384c35.3 0 64-28.7 64-64V384zm-16-88c-13.3 0-24-10.7-24-24s10.7-24 24-24s24 10.7 24 24s-10.7 24-24 24z"/></svg></span>
                         </a>
 
                     </div>
                 </div>
 
-                <div id="search-wrapper" class="hidden">
-                    <form id="searchbar-outer" class="searchbar-outer">
+                <div id="mdbook-search-wrapper" class="hidden">
+                    <form id="mdbook-searchbar-outer" class="searchbar-outer">
                         <div class="search-wrapper">
-                            <input type="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                            <input type="search" id="mdbook-searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="mdbook-searchresults-outer" aria-describedby="searchresults-header">
                             <div class="spinner-wrapper">
-                                <i class="fa fa-spinner fa-spin"></i>
+                                <span class=fa-svg id="fa-spin"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M304 48c0-26.5-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48s48-21.5 48-48zm0 416c0-26.5-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48s48-21.5 48-48zM48 304c26.5 0 48-21.5 48-48s-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48zm464-48c0-26.5-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48s48-21.5 48-48zM142.9 437c18.7-18.7 18.7-49.1 0-67.9s-49.1-18.7-67.9 0s-18.7 49.1 0 67.9s49.1 18.7 67.9 0zm0-294.2c18.7-18.7 18.7-49.1 0-67.9S93.7 56.2 75 75s-18.7 49.1 0 67.9s49.1 18.7 67.9 0zM369.1 437c18.7 18.7 49.1 18.7 67.9 0s18.7-49.1 0-67.9s-49.1-18.7-67.9 0s-18.7 49.1 0 67.9z"/></svg></span>
                             </div>
                         </div>
                     </form>
-                    <div id="searchresults-outer" class="searchresults-outer hidden">
-                        <div id="searchresults-header" class="searchresults-header"></div>
-                        <ul id="searchresults">
+                    <div id="mdbook-searchresults-outer" class="searchresults-outer hidden">
+                        <div id="mdbook-searchresults-header" class="searchresults-header"></div>
+                        <ul id="mdbook-searchresults">
                         </ul>
                     </div>
                 </div>
 
                 <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
                 <script>
-                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
-                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
-                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                    document.getElementById('mdbook-sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('mdbook-sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#mdbook-sidebar a')).forEach(function(link) {
                         link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
                     });
                 </script>
 
-                <div id="content" class="content">
+                <div id="mdbook-content" class="content">
                     <main>
                         <h1 id="introduction"><a class="header" href="#introduction">Introduction</a></h1>
 <p><code>seal-sdk-rs</code> gives you a Seal client that works with any Sui framework. The
@@ -213,19 +212,20 @@ keeps round trips to Mysten key servers short.</li>
 BCS serializers simplify data handling. Advanced users can still manage
 serialization manually when they need to.</li>
 </ul>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="quick-start"><a class="header" href="#quick-start">Quick Start</a></h1>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="quick-start"><a class="header" href="#quick-start">Quick Start</a></h1>
 <p>This guide uses the crate with the default features. In this mode the
 <code>SealClient</code> specialization is active, combining <code>sui_sdk::SuiClient</code>,
 <code>reqwest</code>, and the no-op cache adapters.</p>
 <h2 id="install"><a class="header" href="#install">Install</a></h2>
 <p>Add the crate to your project:</p>
 <pre><code class="language-toml">[dependencies]
-seal-sdk-rs = { git = "https://github.com/gfusee/seal-sdk-rs", tag = "0.0.1" }
+seal-sdk-rs = { git = "https://github.com/gfusee/seal-sdk-rs", tag = "0.0.5" }
 </code></pre>
 <blockquote>
 <p><strong>Info:</strong> The examples build a <code>WalletContext</code> from a normal Sui CLI config
 (<code>WalletContext::new("&lt;path to the config file&gt;")</code>). This approach is easy, but
-not required. Any signer that implements the crate's <code>Signer</code> trait can call
+not required. Any signer that implements the crate’s <code>Signer</code> trait can call
 <code>SessionKey::new</code>, so you can bring your own signing logic if you prefer.</p>
 </blockquote>
 <h2 id="example-setup"><a class="header" href="#example-setup">Example setup</a></h2>
@@ -239,7 +239,7 @@ Both examples rely on the same inputs:</p>
 <p>All helpers return <code>Result&lt;_, SealClientError&gt;</code>, so the <code>?</code> operator propagates
 any failure.</p>
 <h3 id="encrypting-a-string"><a class="header" href="#encrypting-a-string">Encrypting a string</a></h3>
-<pre><pre class="playground"><code class="language-rust no_run"><span class="boring">#![allow(unused)]
+<pre class="playground"><code class="language-rust no_run"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
 </span>use seal_sdk_rs::error::SealClientError;
 use seal_sdk_rs::native_sui_sdk::client::seal_client::SealClient;
@@ -263,7 +263,7 @@ async fn encrypt_message(
             setup.approve_package_id,
             b"my_id".to_vec(),
             1,
-            vec![setup.key_server_id],
+            vec![seal_sdk_rs::base_client::KeyServerConfig::new(setup.key_server_id, None)],
             b"hello from seal".to_vec(),
         )
         .await?;
@@ -271,13 +271,13 @@ async fn encrypt_message(
     drop(recovery_key);
     Ok(encrypted)
 }
-<span class="boring">}</span></code></pre></pre>
+<span class="boring">}</span></code></pre>
 <h3 id="decrypting-the-ciphertext"><a class="header" href="#decrypting-the-ciphertext">Decrypting the ciphertext</a></h3>
 <p>Assume the package at <code>setup.approve_package_id</code> contains a <code>wildcard</code> module
 with a <code>seal_approve</code> function that approves requests for <code>my_id</code>. Use the
 <code>EncryptedObject</code> returned by <code>encrypt_message</code> to rebuild the approval
 transaction and recover the original string.</p>
-<pre><pre class="playground"><code class="language-rust no_run"><span class="boring">#![allow(unused)]
+<pre class="playground"><code class="language-rust no_run"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
 </span>use seal_sdk_rs::error::SealClientError;
 use seal_sdk_rs::native_sui_sdk::client::seal_client::SealClient;
@@ -326,14 +326,16 @@ async fn decrypt_message(
             &amp;bcs::to_bytes(&amp;encrypted)?,
             approve_ptb,
             &amp;session_key,
+            std::collections::HashMap::new(),
         )
         .await?;
 
     assert_eq!(plaintext, b"hello from seal");
     Ok(())
 }
-<span class="boring">}</span></code></pre></pre>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="concepts--architecture"><a class="header" href="#concepts--architecture">Concepts &amp; Architecture</a></h1>
+<span class="boring">}</span></code></pre>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="concepts--architecture"><a class="header" href="#concepts--architecture">Concepts &amp; Architecture</a></h1>
 <p>This chapter explains how the SDK fits together: what powers <code>BaseSealClient</code>,
 how the ready-made specializations behave, and which operational details matter
 when you run the client in production.</p>
@@ -392,6 +394,17 @@ again.</li>
 </ol>
 <p>Handle the session key like a bearer token: keep it safe in memory and drop it
 when you no longer need it.</p>
+<h2 id="independent-and-committee-key-servers"><a class="header" href="#independent-and-committee-key-servers">Independent and committee key servers</a></h2>
+<p>Seal key servers come in two flavors. An <strong>independent</strong> server holds the full
+master secret and serves key requests directly. A <strong>committee</strong> distributes the
+secret across multiple participants via threshold cryptography; an <strong>aggregator</strong>
+collects partial responses and returns the combined result.</p>
+<p>The SDK handles both transparently through <code>KeyServerConfig</code>. Pass
+<code>aggregator_url: None</code> for independent servers and
+<code>aggregator_url: Some(url)</code> for committees. During decryption, provide a
+<code>HashMap&lt;ObjectID, String&gt;</code> mapping committee key server IDs to their aggregator
+URLs. See the <a href="#committee-servers">Committee Servers</a> chapter for details
+and examples.</p>
 <h2 id="recovery-keys-and-operational-security"><a class="header" href="#recovery-keys-and-operational-security">Recovery keys and operational security</a></h2>
 <p>Every encrypt helper returns <code>(EncryptedObject, [u8; 32])</code>. The second value is
 an emergency recovery key. Store it if you want a break-glass option when key
@@ -426,105 +439,180 @@ into <code>rustls</code> manually.</li>
 </ul>
 <p>Disable the defaults if you want to bring your own implementations and re-enable
 only the pieces you need.</p>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="advanced-topics"><a class="header" href="#advanced-topics">Advanced Topics</a></h1>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="committee-servers"><a class="header" href="#committee-servers">Committee Servers</a></h1>
+<p>Seal supports two key server modes: <strong>independent</strong> and <strong>committee</strong>. This
+chapter explains how they differ and how the SDK handles each.</p>
+<h2 id="independent-vs-committee"><a class="header" href="#independent-vs-committee">Independent vs committee</a></h2>
+<p>An <strong>independent</strong> key server is a single operator that holds the master secret
+and responds to key requests directly. The on-chain <code>KeyServer</code> object stores
+the server URL, and the SDK calls that URL to fetch derived keys.</p>
+<p>A <strong>committee</strong> key server distributes the master secret across multiple
+participants using threshold cryptography (MPC). No single member holds the
+complete secret. An <strong>aggregator</strong> service coordinates key requests: it fans out
+to individual members, collects partial responses until the threshold is met,
+combines them, and returns the result. From the SDK’s perspective, the
+aggregator is the single endpoint to call.</p>
+<h2 id="on-chain-representation"><a class="header" href="#on-chain-representation">On-chain representation</a></h2>
+<p>Both modes use the same <code>KeyServer</code> Move object. The difference lies in the
+<code>KeyServerV2</code> dynamic field’s <code>ServerType</code> enum:</p>
+<ul>
+<li><code>ServerType::Independent { url }</code> stores the server URL directly.</li>
+<li><code>ServerType::Committee { version, threshold, partial_key_servers }</code> stores the
+threshold and a vector of <code>PartialKeyServer</code> entries (each with their own URL,
+partial public key, and party ID). There is no single URL on-chain for
+committees because the aggregator endpoint is provided by the caller.</li>
+</ul>
+<p>The SDK reads the V2 dynamic field and falls back to V1 for older key servers.</p>
+<h2 id="keyserverconfig"><a class="header" href="#keyserverconfig">KeyServerConfig</a></h2>
+<p><code>KeyServerConfig</code> wraps a key server’s object ID with an optional aggregator URL:</p>
+<pre><code class="language-rust ignore">use seal_sdk_rs::base_client::KeyServerConfig;
+
+// Independent server: no aggregator URL needed.
+let independent = KeyServerConfig::new(key_server_id, None);
+
+// Committee server: provide the aggregator URL.
+let committee = KeyServerConfig::new(
+    key_server_id,
+    Some("https://aggregator.example.com".to_string()),
+);</code></pre>
+<p>During encryption, the aggregator URL has no effect; only the key server’s
+on-chain public key matters. During decryption, the SDK uses the aggregator URL
+(when present) instead of the on-chain server URL to fetch derived keys.</p>
+<h2 id="encrypting-with-a-committee"><a class="header" href="#encrypting-with-a-committee">Encrypting with a committee</a></h2>
+<p>Encryption works the same way for both modes. The SDK fetches the public key
+from the on-chain <code>KeyServer</code> object and encrypts locally:</p>
+<pre class="playground"><code class="language-rust no_run"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>use seal_sdk_rs::base_client::KeyServerConfig;
+use seal_sdk_rs::error::SealClientError;
+use seal_sdk_rs::generic_types::ObjectID;
+use seal_sdk_rs::native_sui_sdk::client::seal_client::SealClient;
+use sui_sdk::SuiClientBuilder;
+
+async fn encrypt_with_committee(
+    package_id: ObjectID,
+    key_server_id: ObjectID,
+    aggregator_url: String,
+) -&gt; Result&lt;seal_sdk_rs::crypto::EncryptedObject, SealClientError&gt; {
+    let sui_client = SuiClientBuilder::default()
+        .build("https://fullnode.testnet.sui.io:443")
+        .await?;
+    let client = SealClient::new(sui_client);
+
+    let key_server = KeyServerConfig::new(key_server_id, Some(aggregator_url));
+
+    let (encrypted, _recovery_key) = client
+        .encrypt_bytes(
+            package_id,
+            b"my_id".to_vec(),
+            1,
+            vec![key_server],
+            b"secret data".to_vec(),
+        )
+        .await?;
+
+    Ok(encrypted)
+}
+<span class="boring">}</span></code></pre>
+<h2 id="decrypting-with-a-committee"><a class="header" href="#decrypting-with-a-committee">Decrypting with a committee</a></h2>
+<p>During decryption, pass a map of key server object IDs to their aggregator URLs.
+The SDK routes the key fetch request to the aggregator instead of the on-chain
+URL:</p>
+<pre class="playground"><code class="language-rust no_run"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>use seal_sdk_rs::error::SealClientError;
+use seal_sdk_rs::generic_types::ObjectID;
+use seal_sdk_rs::native_sui_sdk::client::seal_client::SealClient;
+use seal_sdk_rs::session_key::SessionKey;
+use std::collections::HashMap;
+use sui_sdk::SuiClientBuilder;
+use sui_sdk::wallet_context::WalletContext;
+use sui_types::Identifier;
+use sui_types::programmable_transaction_builder::ProgrammableTransactionBuilder;
+use std::str::FromStr;
+
+async fn decrypt_with_committee(
+    package_id: ObjectID,
+    key_server_id: ObjectID,
+    aggregator_url: String,
+    encrypted: seal_sdk_rs::crypto::EncryptedObject,
+) -&gt; Result&lt;Vec&lt;u8&gt;, SealClientError&gt; {
+    let sui_client = SuiClientBuilder::default()
+        .build("https://fullnode.testnet.sui.io:443")
+        .await?;
+    let client = SealClient::new(sui_client);
+
+    let mut wallet = WalletContext::new("&lt;path to config&gt;").unwrap();
+    let session_key = SessionKey::new(package_id, 5, &amp;mut wallet).await?;
+
+    let mut builder = ProgrammableTransactionBuilder::new();
+    let id_arg = builder.pure(b"my_id".to_vec())?;
+    builder.programmable_move_call(
+        package_id.into(),
+        Identifier::from_str("wildcard")?,
+        Identifier::from_str("seal_approve")?,
+        vec![],
+        vec![id_arg],
+    );
+
+    let aggregator_urls = HashMap::from([
+        (key_server_id, aggregator_url),
+    ]);
+
+    let plaintext = client
+        .decrypt_object_bytes(
+            &amp;bcs::to_bytes(&amp;encrypted)?,
+            builder.finish(),
+            &amp;session_key,
+            aggregator_urls,
+        )
+        .await?;
+
+    Ok(plaintext)
+}
+<span class="boring">}</span></code></pre>
+<p>For independent servers, pass <code>HashMap::new()</code> (or omit the key server from the
+map) and the SDK will use the on-chain URL as before.</p>
+<h2 id="mixing-independent-and-committee-servers"><a class="header" href="#mixing-independent-and-committee-servers">Mixing independent and committee servers</a></h2>
+<p>You can encrypt with multiple key servers where some are independent and others
+are committee-based. During decryption, only include the committee servers in the
+aggregator URL map; independent servers will automatically use their on-chain
+URL:</p>
+<pre><code class="language-rust ignore">let aggregator_urls = HashMap::from([
+    (committee_key_server_id, "https://aggregator.example.com".to_string()),
+    // independent_key_server_id is NOT in the map, so its on-chain URL is used.
+]);
+
+let plaintext = client
+    .decrypt_object_bytes(&amp;encrypted_bytes, ptb, &amp;session_key, aggregator_urls)
+    .await?;</code></pre>
+<h2 id="error-handling"><a class="header" href="#error-handling">Error handling</a></h2>
+<p>When the aggregator is unreachable or returns an error, the SDK treats it the
+same as a failed independent server: the response is excluded from the threshold
+count. If too few servers respond, decryption fails with
+<code>SealClientError::InsufficientKeys</code>.</p>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="advanced-topics"><a class="header" href="#advanced-topics">Advanced Topics</a></h1>
 <p>This chapter shows how to plug in custom clients, caches, and transports, plus
 how to pick the right feature flags and error strategy when you deploy the SDK.</p>
 <h2 id="custom-sui-client"><a class="header" href="#custom-sui-client">Custom Sui client</a></h2>
 <p>You can run <code>BaseSealClient</code> with a different version of the Sui SDK. Implement
 the <a href="../../src/sui_client.rs"><code>SuiClient</code></a> trait for the client type you want to
-use and update your <code>Cargo.toml</code> to point at that version. The snippet below is
-based on the default implementation for <code>sui_sdk::SuiClient</code> and can serve as a
-starting point:</p>
-<pre><pre class="playground"><code class="language-rust no_run"><span class="boring">#![allow(unused)]
-</span><span class="boring">fn main() {
-</span>use seal_sdk_rs::base_client::KeyServerInfo;
-use seal_sdk_rs::generic_types::ObjectID;
-use seal_sdk_rs::sui_client::SuiClient;
-use async_trait::async_trait;
-use serde_json::Value;
-use sui_sdk::rpc_types::{SuiMoveValue, SuiParsedData};
-use sui_types::TypeTag;
-use sui_types::dynamic_field::DynamicFieldName;
-
-#[derive(Debug, thiserror::Error)]
-pub enum CustomSuiError {
-    #[error("Sui SDK error: {0}")]
-    SuiSdk(#[from] sui_sdk::error::Error),
-    #[error("Missing object data for {object_id}")]
-    Missing { object_id: sui_types::base_types::ObjectID },
-    #[error("Unexpected data shape for {object_id}")]
-    Invalid { object_id: sui_types::base_types::ObjectID },
-}
-
-#[async_trait]
-impl SuiClient for sui_sdk::SuiClient {
-    type Error = CustomSuiError;
-
-    async fn get_key_server_info(
-        &amp;self,
-        key_server_id: [u8; 32],
-    ) -&gt; Result&lt;KeyServerInfo, Self::Error&gt; {
-        let key_server_id = sui_types::base_types::ObjectID::new(key_server_id);
-        let response = self
-            .read_api()
-            .get_dynamic_field_object(
-                key_server_id,
-                DynamicFieldName {
-                    type_: TypeTag::U64,
-                    value: Value::String("1".to_string()),
-                },
-            )
-            .await?;
-
-        let object_data = response.data.ok_or(CustomSuiError::Missing { object_id: key_server_id })?;
-        let content = object_data.content.ok_or(CustomSuiError::Missing { object_id: key_server_id })?;
-
-        let parsed = match content {
-            SuiParsedData::MoveObject(obj) =&gt; obj,
-            _ =&gt; return Err(CustomSuiError::Invalid { object_id: key_server_id }),
-        };
-
-        let value_struct = match parsed.fields.field_value("value") {
-            Some(SuiMoveValue::Struct(s)) =&gt; s,
-            _ =&gt; return Err(CustomSuiError::Invalid { object_id: key_server_id }),
-        };
-
-        let url = match value_struct.field_value("url") {
-            Some(SuiMoveValue::String(url)) =&gt; url,
-            _ =&gt; return Err(CustomSuiError::Invalid { object_id: key_server_id }),
-        };
-
-        let name = match value_struct.field_value("name") {
-            Some(SuiMoveValue::String(name)) =&gt; name,
-            _ =&gt; return Err(CustomSuiError::Invalid { object_id: key_server_id }),
-        };
-
-        let public_key_bytes = match value_struct.field_value("pk") {
-            Some(SuiMoveValue::Vector(bytes)) =&gt; bytes
-                .into_iter()
-                .map(|value| match value {
-                    SuiMoveValue::Number(byte) =&gt; u8::try_from(byte).map_err(|_| CustomSuiError::Invalid { object_id: key_server_id }),
-                    _ =&gt; Err(CustomSuiError::Invalid { object_id: key_server_id }),
-                })
-                .collect::&lt;Result&lt;Vec&lt;_&gt;, _&gt;&gt;()?,
-            _ =&gt; return Err(CustomSuiError::Invalid { object_id: key_server_id }),
-        };
-
-        Ok(KeyServerInfo {
-            object_id: ObjectID(key_server_id.into_bytes()),
-            name,
-            url,
-            public_key: hex::encode(public_key_bytes),
-        })
-    }
-}
-<span class="boring">}</span></code></pre></pre>
+use and update your <code>Cargo.toml</code> to point at that version.</p>
+<p>The built-in implementation tries the V2 dynamic field first (key <code>2</code>) and falls
+back to V1 (key <code>1</code>). V2 supports both independent and committee key servers via
+a <code>ServerType</code> enum. For committee servers the on-chain URL is empty because
+the aggregator URL is provided externally through <code>KeyServerConfig</code>.</p>
+<p>If you write your own implementation, handle both versions to stay compatible
+with older and newer key servers. See the default implementation in
+<code>src/native_sui_sdk/client/sui_client.rs</code> for reference.</p>
 <p>Compile <code>seal-sdk-rs</code> against your chosen dependency version and the new
 implementation becomes active.</p>
 <h2 id="custom-http-client"><a class="header" href="#custom-http-client">Custom HTTP client</a></h2>
 <p><a href="../../src/http_client.rs"><code>HttpClient</code></a> defines a single method. Implement it
 for your preferred transport (hyper, surf, a custom blocking client, etc.):</p>
-<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
 </span>use std::collections::HashMap;
 
@@ -534,14 +622,14 @@ async fn post&lt;S: ToString + Send + Sync&gt;(
     headers: HashMap&lt;String, String&gt;,
     body: S,
 ) -&gt; Result&lt;PostResponse, Self::PostError&gt;;
-<span class="boring">}</span></code></pre></pre>
+<span class="boring">}</span></code></pre>
 <p>Seal key servers only expect HTTP <code>POST</code> requests, so you do not need anything
 else.</p>
 <h2 id="custom-caching"><a class="header" href="#custom-caching">Custom caching</a></h2>
 <p>To plug in your own cache, implement <a href="../../src/cache.rs"><code>SealCache</code></a>. The key
 method, <code>try_get_with</code>, either returns a cached value or runs the provided
 future to populate the cache:</p>
-<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
 </span>use std::future::Future;
 use std::sync::Arc;
@@ -554,7 +642,7 @@ async fn try_get_with&lt;Fut, Error&gt;(
 where
     Fut: Future&lt;Output = Result&lt;Self::Value, Error&gt;&gt; + Send,
     Error: Send + Sync + 'static;
-<span class="boring">}</span></code></pre></pre>
+<span class="boring">}</span></code></pre>
 <p>Whenever possible, add request coalescing so you collapse duplicate misses into
 one in-flight future. This reduces unnecessary parallel calls, keeps you away
 from Seal server rate limits, and lightens the load on Sui RPC endpoints.</p>
@@ -592,6 +680,11 @@ gives you an emergency path if key servers become unavailable.</li>
 
         </div>
 
+        <template id=fa-eye><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M288 32c-80.8 0-145.5 36.8-192.6 80.6C48.6 156 17.3 208 2.5 243.7c-3.3 7.9-3.3 16.7 0 24.6C17.3 304 48.6 356 95.4 399.4C142.5 443.2 207.2 480 288 480s145.5-36.8 192.6-80.6c46.8-43.5 78.1-95.4 93-131.1c3.3-7.9 3.3-16.7 0-24.6c-14.9-35.7-46.2-87.7-93-131.1C433.5 68.8 368.8 32 288 32zM432 256c0 79.5-64.5 144-144 144s-144-64.5-144-144s64.5-144 144-144s144 64.5 144 144zM288 192c0 35.3-28.7 64-64 64c-11.5 0-22.3-3-31.6-8.4c-.2 2.8-.4 5.5-.4 8.4c0 53 43 96 96 96s96-43 96-96s-43-96-96-96c-2.8 0-5.6 .1-8.4 .4c5.3 9.3 8.4 20.1 8.4 31.6z"/></svg></span></template>
+        <template id=fa-eye-slash><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M38.8 5.1C28.4-3.1 13.3-1.2 5.1 9.2S-1.2 34.7 9.2 42.9l592 464c10.4 8.2 25.5 6.3 33.7-4.1s6.3-25.5-4.1-33.7L525.6 386.7c39.6-40.6 66.4-86.1 79.9-118.4c3.3-7.9 3.3-16.7 0-24.6c-14.9-35.7-46.2-87.7-93-131.1C465.5 68.8 400.8 32 320 32c-68.2 0-125 26.3-169.3 60.8L38.8 5.1zM223.1 149.5C248.6 126.2 282.7 112 320 112c79.5 0 144 64.5 144 144c0 24.9-6.3 48.3-17.4 68.7L408 294.5c5.2-11.8 8-24.8 8-38.5c0-53-43-96-96-96c-2.8 0-5.6 .1-8.4 .4c5.3 9.3 8.4 20.1 8.4 31.6c0 10.2-2.4 19.8-6.6 28.3l-90.3-70.8zm223.1 298L373 389.9c-16.4 6.5-34.3 10.1-53 10.1c-79.5 0-144-64.5-144-144c0-6.9 .5-13.6 1.4-20.2L83.1 161.5C60.3 191.2 44 220.8 34.5 243.7c-3.3 7.9-3.3 16.7 0 24.6c14.9 35.7 46.2 87.7 93 131.1C174.5 443.2 239.2 480 320 480c47.8 0 89.9-12.9 126.2-32.5z"/></svg></span></template>
+        <template id=fa-copy><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M502.6 70.63l-61.25-61.25C435.4 3.371 427.2 0 418.7 0H255.1c-35.35 0-64 28.66-64 64l.0195 256C192 355.4 220.7 384 256 384h192c35.2 0 64-28.8 64-64V93.25C512 84.77 508.6 76.63 502.6 70.63zM464 320c0 8.836-7.164 16-16 16H255.1c-8.838 0-16-7.164-16-16L239.1 64.13c0-8.836 7.164-16 16-16h128L384 96c0 17.67 14.33 32 32 32h47.1V320zM272 448c0 8.836-7.164 16-16 16H63.1c-8.838 0-16-7.164-16-16L47.98 192.1c0-8.836 7.164-16 16-16H160V128H63.99c-35.35 0-64 28.65-64 64l.0098 256C.002 483.3 28.66 512 64 512h192c35.2 0 64-28.8 64-64v-32h-47.1L272 448z"/></svg></span></template>
+        <template id=fa-play><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M73 39c-14.8-9.1-33.4-9.4-48.5-.9S0 62.6 0 80V432c0 17.4 9.4 33.4 24.5 41.9s33.7 8.1 48.5-.9L361 297c14.3-8.7 23-24.2 23-41s-8.7-32.2-23-41L73 39z"/></svg></span></template>
+        <template id=fa-clock-rotate-left><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M75 75L41 41C25.9 25.9 0 36.6 0 57.9V168c0 13.3 10.7 24 24 24H134.1c21.4 0 32.1-25.9 17-41l-30.8-30.8C155 85.5 203 64 256 64c106 0 192 86 192 192s-86 192-192 192c-40.8 0-78.6-12.7-109.7-34.4c-14.5-10.1-34.4-6.6-44.6 7.9s-6.6 34.4 7.9 44.6C151.2 495 201.7 512 256 512c141.4 0 256-114.6 256-256S397.4 0 256 0C185.3 0 121.3 28.7 75 75zm181 53c-13.3 0-24 10.7-24 24V256c0 6.4 2.5 12.5 7 17l72 72c9.4 9.4 24.6 9.4 33.9 0s9.4-24.6 0-33.9l-65-65V152c0-13.3-10.7-24-24-24z"/></svg></span></template>
 
 
 
@@ -600,13 +693,13 @@ gives you an emergency path if key servers become unavailable.</li>
         </script>
 
 
-        <script src="elasticlunr.min.js"></script>
-        <script src="mark.min.js"></script>
-        <script src="searcher.js"></script>
+        <script src="elasticlunr-ef4e11c1.min.js"></script>
+        <script src="mark-09e88c2c.min.js"></script>
+        <script src="searcher-c2a407aa.js"></script>
 
-        <script src="clipboard.min.js"></script>
-        <script src="highlight.js"></script>
-        <script src="book.js"></script>
+        <script src="clipboard-1626706a.min.js"></script>
+        <script src="highlight-abc7f01d.js"></script>
+        <script src="book-a0b12cfe.js"></script>
 
         <!-- Custom JS scripts -->
 
