@@ -43,7 +43,7 @@ jobs:
         run: cargo install licensesnip --locked
 
       - name: Build documentation
-        run: mdbook build book --dest-dir ../docs
+        run: mdbook build book --dest-dir ${{ github.workspace }}/docs
 
       - name: License
         run: licensesnip
