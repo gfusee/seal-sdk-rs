@@ -51,7 +51,7 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-02270dd6.js";
+            window.path_to_searchindex_js = "searchindex-44101b25.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-c99c71f3.js"></script>
@@ -214,6 +214,25 @@ partial public key, and party ID). There is no single URL on-chain for
 committees because the aggregator endpoint is provided by the caller.</li>
 </ul>
 <p>The SDK reads the V2 dynamic field and falls back to V1 for older key servers.</p>
+<h2 id="querying-key-server-metadata"><a class="header" href="#querying-key-server-metadata">Querying key server metadata</a></h2>
+<p>Before encrypting or decrypting, you can inspect a key server’s metadata with
+<code>get_key_server_info</code>. The returned <code>KeyServerInfo</code> includes a <code>key_server_type</code>
+field that tells you whether the server is independent or part of a committee:</p>
+<pre><code class="language-rust ignore">use seal_sdk_rs::base_client::KeyServerType;
+
+let info = client.get_key_server_info(key_server_id).await?;
+
+match info.key_server_type {
+    KeyServerType::Independent =&gt; {
+        println!("Independent server at {}", info.url);
+    }
+    KeyServerType::Committee =&gt; {
+        println!("Committee server — provide an aggregator URL for decryption");
+    }
+}</code></pre>
+<p>This is useful when your application needs to decide at runtime whether an
+aggregator URL is required, or when you want to display server details to the
+user.</p>
 <h2 id="keyserverconfig"><a class="header" href="#keyserverconfig">KeyServerConfig</a></h2>
 <p><code>KeyServerConfig</code> wraps a key server’s object ID with an optional aggregator URL:</p>
 <pre><code class="language-rust ignore">use seal_sdk_rs::base_client::KeyServerConfig;
