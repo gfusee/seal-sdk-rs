@@ -29,6 +29,31 @@ Both modes use the same `KeyServer` Move object. The difference lies in the
 
 The SDK reads the V2 dynamic field and falls back to V1 for older key servers.
 
+## Querying key server metadata
+
+Before encrypting or decrypting, you can inspect a key server's metadata with
+`get_key_server_info`. The returned `KeyServerInfo` includes a `key_server_type`
+field that tells you whether the server is independent or part of a committee:
+
+```rust,ignore
+use seal_sdk_rs::base_client::KeyServerType;
+
+let info = client.get_key_server_info(key_server_id).await?;
+
+match info.key_server_type {
+    KeyServerType::Independent => {
+        println!("Independent server at {}", info.url);
+    }
+    KeyServerType::Committee => {
+        println!("Committee server — provide an aggregator URL for decryption");
+    }
+}
+```
+
+This is useful when your application needs to decide at runtime whether an
+aggregator URL is required, or when you want to display server details to the
+user.
+
 ## KeyServerConfig
 
 `KeyServerConfig` wraps a key server's object ID with an optional aggregator URL:
