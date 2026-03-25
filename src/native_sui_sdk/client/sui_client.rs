@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use crate::base_client::KeyServerInfo;
+use crate::base_client::{KeyServerInfo, KeyServerType};
 use crate::generic_types::ObjectID;
 use crate::sui_client::SuiClient;
 use async_trait::async_trait;
@@ -164,6 +164,7 @@ impl SuiClientKeyServerExt for sui_sdk::SuiClient {
 
         Ok(KeyServerInfo {
             object_id: ObjectID(key_server_id.into_bytes()),
+            key_server_type: KeyServerType::Independent,
             name,
             url,
             public_key,
@@ -261,15 +262,17 @@ impl SuiClientKeyServerExt for sui_sdk::SuiClient {
             }
         };
 
-        // Parse server_type to extract url.
+        // Parse server_type to extract url and key server type.
         // Due to serde untagged deserialization order, the RPC may return a Variant
         // (with an explicit "variant" field) or a Struct (when the SDK deserializes
         // the variant JSON as a struct, ignoring the extra "variant" key).
-        let url = match server_type_value {
+        let (url, key_server_type) = match server_type_value {
             SuiMoveValue::Variant(variant) => {
                 match variant.variant.as_str() {
                     "Independent" => match variant.fields.get("url") {
-                        Some(SuiMoveValue::String(url)) => url.clone(),
+                        Some(SuiMoveValue::String(url)) => {
+                            (url.clone(), KeyServerType::Independent)
+                        }
                         _ => {
                             return Err(SuiClientError::MissingKeyServerField {
                                 field_name: "server_type.Independent.url".to_string(),
@@ -279,7 +282,7 @@ impl SuiClientKeyServerExt for sui_sdk::SuiClient {
                     "Committee" => {
                         // Committee key servers don't have a single URL.
                         // The aggregator URL is provided externally via KeyServerConfig.
-                        String::new()
+                        (String::new(), KeyServerType::Committee)
                     }
                     _ => {
                         return Err(SuiClientError::InvalidKeyServerDynamicFieldsType {
@@ -292,8 +295,8 @@ impl SuiClientKeyServerExt for sui_sdk::SuiClient {
                 // Fallback: serde may deserialize the enum variant as a Struct.
                 // Independent variant has a "url" field, Committee does not.
                 match s.field_value("url") {
-                    Some(SuiMoveValue::String(url)) => url,
-                    _ => String::new(),
+                    Some(SuiMoveValue::String(url)) => (url, KeyServerType::Independent),
+                    _ => (String::new(), KeyServerType::Committee),
                 }
             }
             _ => {
@@ -305,6 +308,7 @@ impl SuiClientKeyServerExt for sui_sdk::SuiClient {
 
         Ok(KeyServerInfo {
             object_id: ObjectID(key_server_id.into_bytes()),
+            key_server_type,
             name,
             url,
             public_key,

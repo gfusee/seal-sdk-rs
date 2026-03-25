@@ -30,10 +30,20 @@ use std::collections::HashMap;
 use std::fmt::Display;
 use std::sync::Arc;
 
+/// Whether a key server operates independently or as part of a committee.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub enum KeyServerType {
+    /// Standalone key server with its own URL.
+    Independent,
+    /// Key server that is part of a committee; requires an external aggregator URL.
+    Committee,
+}
+
 /// Key server object layout containing object id, name, url, and public key.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct KeyServerInfo {
     pub object_id: ObjectID,
+    pub key_server_type: KeyServerType,
     pub name: String,
     pub url: String,
     pub public_key: String,
@@ -99,6 +109,26 @@ where
             sui_client,
             http_client,
         }
+    }
+
+    /// Retrieves [`KeyServerInfo`] for a single key server, using the cache when available.
+    ///
+    /// This is useful when you want to inspect a key server's metadata (name, URL, public key)
+    /// without performing an encryption or decryption operation.
+    pub async fn get_key_server_info<ID>(
+        &self,
+        key_server_id: ID,
+    ) -> Result<KeyServerInfo, SealClientError>
+    where
+        ObjectID: From<ID>,
+    {
+        let object_id: ObjectID = key_server_id.into();
+        let cache_key = KeyServerInfoCacheKey::new(object_id);
+
+        self.key_server_info_cache
+            .try_get_with(cache_key, self.sui_client.get_key_server_info(object_id.0))
+            .await
+            .map_err(unwrap_cache_error)
     }
 
     /// Convenience wrapper around [`encrypt_bytes`] that accepts a serializable value.
