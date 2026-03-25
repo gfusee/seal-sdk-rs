@@ -74,8 +74,27 @@ master secret and serves key requests directly. A **committee** distributes the
 secret across multiple participants via threshold cryptography; an **aggregator**
 collects partial responses and returns the combined result.
 
-The SDK handles both transparently through `KeyServerConfig`. Pass
-`aggregator_url: None` for independent servers and
+The `KeyServerType` enum lets you tell the two apart programmatically:
+
+```rust,ignore
+use seal_sdk_rs::base_client::KeyServerType;
+
+match info.key_server_type {
+    KeyServerType::Independent => { /* server URL is in info.url */ }
+    KeyServerType::Committee   => { /* needs an external aggregator URL */ }
+}
+```
+
+You can retrieve a key server's metadata (name, URL, public key, type) at any
+time with `get_key_server_info`:
+
+```rust,ignore
+let info = client.get_key_server_info(key_server_id).await?;
+println!("name: {}, type: {:?}", info.name, info.key_server_type);
+```
+
+For encryption and decryption, the SDK handles both types transparently through
+`KeyServerConfig`. Pass `aggregator_url: None` for independent servers and
 `aggregator_url: Some(url)` for committees. During decryption, provide a
 `HashMap<ObjectID, String>` mapping committee key server IDs to their aggregator
 URLs. See the [Committee Servers](./committee-servers.md) chapter for details

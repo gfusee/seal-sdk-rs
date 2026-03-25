@@ -16,7 +16,7 @@
 use crate::utils::setup::setup;
 use anyhow::bail;
 use reqwest::Client;
-use seal_sdk_rs::base_client::KeyServerConfig;
+use seal_sdk_rs::base_client::{KeyServerConfig, KeyServerType};
 use seal_sdk_rs::error::SealClientError;
 use seal_sdk_rs::native_sui_sdk::client::seal_client::SealClient;
 use seal_sdk_rs::session_key::SessionKey;
@@ -958,6 +958,53 @@ async fn test_encrypt_decrypt_bytes_independent_with_aggregator_url() -> anyhow:
         "Expected InsufficientKeys error, got: {:?}",
         decrypted_result
     );
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn test_get_key_server_info_independent() -> anyhow::Result<()> {
+    let arc_setup = setup().await?;
+    let mut setup_guard = arc_setup.lock_unchecked();
+    let setup = setup_guard.deref_mut().as_mut().unwrap();
+
+    let sui_client = SuiClientBuilder::default().build(&setup.rpc_url).await?;
+
+    let seal_client = SealClient::new(sui_client);
+
+    let key_server_id = setup.seal_instances[0].key_server_id;
+    let info = seal_client.get_key_server_info(key_server_id).await?;
+
+    assert_eq!(info.object_id, key_server_id);
+    assert_eq!(info.key_server_type, KeyServerType::Independent);
+    assert!(!info.name.is_empty());
+    assert!(!info.url.is_empty());
+    assert!(!info.public_key.is_empty());
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn test_get_key_server_info_committee() -> anyhow::Result<()> {
+    let arc_setup = setup().await?;
+    let mut setup_guard = arc_setup.lock_unchecked();
+    let setup = setup_guard.deref_mut().as_mut().unwrap();
+
+    let sui_client = SuiClientBuilder::default().build(&setup.rpc_url).await?;
+
+    let seal_client = SealClient::new(sui_client);
+
+    let committee = &setup.committee_instance;
+    let info = seal_client
+        .get_key_server_info(committee.key_server_id)
+        .await?;
+
+    assert_eq!(info.object_id, committee.key_server_id);
+    assert_eq!(info.key_server_type, KeyServerType::Committee);
+    assert!(!info.name.is_empty());
+    assert!(!info.public_key.is_empty());
+    // Committee key servers have an empty URL (aggregator URL is provided externally)
+    assert!(info.url.is_empty());
 
     Ok(())
 }
