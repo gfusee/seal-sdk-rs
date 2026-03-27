@@ -16,7 +16,7 @@
 use crate::utils::setup::setup;
 use anyhow::bail;
 use reqwest::Client;
-use seal_sdk_rs::base_client::{KeyServerConfig, KeyServerType};
+use seal_sdk_rs::base_client::{KeyServerConfig, ServerType};
 use seal_sdk_rs::error::SealClientError;
 use seal_sdk_rs::native_sui_sdk::client::seal_client::SealClient;
 use seal_sdk_rs::session_key::SessionKey;
@@ -976,10 +976,12 @@ async fn test_get_key_server_info_independent() -> anyhow::Result<()> {
     let info = seal_client.get_key_server_info(key_server_id).await?;
 
     assert_eq!(info.object_id, key_server_id);
-    assert_eq!(info.key_server_type, KeyServerType::Independent);
     assert!(!info.name.is_empty());
-    assert!(!info.url.is_empty());
     assert!(!info.public_key.is_empty());
+    assert!(
+        matches!(info.server_type, ServerType::Independent { ref url } if !url.is_empty()),
+        "Expected ServerType::Independent with non-empty url"
+    );
 
     Ok(())
 }
@@ -1000,11 +1002,79 @@ async fn test_get_key_server_info_committee() -> anyhow::Result<()> {
         .await?;
 
     assert_eq!(info.object_id, committee.key_server_id);
-    assert_eq!(info.key_server_type, KeyServerType::Committee);
     assert!(!info.name.is_empty());
     assert!(!info.public_key.is_empty());
-    // Committee key servers have an empty URL (aggregator URL is provided externally)
-    assert!(info.url.is_empty());
+    assert!(
+        matches!(info.server_type, ServerType::Committee { .. }),
+        "Expected ServerType::Committee"
+    );
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn test_get_committee_info_committee() -> anyhow::Result<()> {
+    let arc_setup = setup().await?;
+    let mut setup_guard = arc_setup.lock_unchecked();
+    let setup = setup_guard.deref_mut().as_mut().unwrap();
+
+    let sui_client = SuiClientBuilder::default().build(&setup.rpc_url).await?;
+
+    let seal_client = SealClient::new(sui_client);
+
+    let committee = &setup.committee_instance;
+    let committee_info = seal_client
+        .get_committee_info(committee.key_server_id)
+        .await?;
+
+    let server_type =
+        committee_info.expect("Expected Some(ServerType::Committee) for a committee key server");
+    match server_type {
+        ServerType::Committee {
+            version: _,
+            threshold,
+            ref partial_key_servers,
+        } => {
+            assert_eq!(threshold, 2);
+            assert_eq!(partial_key_servers.len(), 3);
+
+            let mut seen_party_ids = std::collections::HashSet::new();
+            for member in partial_key_servers {
+                assert!(!member.url.is_empty(), "Member URL should not be empty");
+                assert!(
+                    !member.partial_pk.is_empty(),
+                    "Member partial_pk should not be empty"
+                );
+                assert!(
+                    seen_party_ids.insert(member.party_id),
+                    "Duplicate party_id: {}",
+                    member.party_id
+                );
+            }
+        }
+        _ => panic!("Expected ServerType::Committee"),
+    }
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn test_get_committee_info_independent() -> anyhow::Result<()> {
+    let arc_setup = setup().await?;
+    let mut setup_guard = arc_setup.lock_unchecked();
+    let setup = setup_guard.deref_mut().as_mut().unwrap();
+
+    let sui_client = SuiClientBuilder::default().build(&setup.rpc_url).await?;
+
+    let seal_client = SealClient::new(sui_client);
+
+    let key_server_id = setup.seal_instances[0].key_server_id;
+    let committee_info = seal_client.get_committee_info(key_server_id).await?;
+
+    assert!(
+        committee_info.is_none(),
+        "Expected None for an independent key server"
+    );
 
     Ok(())
 }

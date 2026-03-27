@@ -32,20 +32,21 @@ The SDK reads the V2 dynamic field and falls back to V1 for older key servers.
 ## Querying key server metadata
 
 Before encrypting or decrypting, you can inspect a key server's metadata with
-`get_key_server_info`. The returned `KeyServerInfo` includes a `key_server_type`
-field that tells you whether the server is independent or part of a committee:
+`get_key_server_info`. The returned `KeyServerInfo` includes a `server_type`
+field — a `ServerType` enum that mirrors the on-chain Move type:
 
 ```rust,ignore
-use seal_sdk_rs::base_client::KeyServerType;
+use seal_sdk_rs::base_client::ServerType;
 
 let info = client.get_key_server_info(key_server_id).await?;
 
-match info.key_server_type {
-    KeyServerType::Independent => {
-        println!("Independent server at {}", info.url);
+match &info.server_type {
+    ServerType::Independent { url } => {
+        println!("Independent server at {url}");
     }
-    KeyServerType::Committee => {
-        println!("Committee server — provide an aggregator URL for decryption");
+    ServerType::Committee { version, threshold, partial_key_servers } => {
+        println!("Committee v{version}, threshold {threshold}");
+        println!("{} partial key servers", partial_key_servers.len());
     }
 }
 ```
@@ -53,6 +54,37 @@ match info.key_server_type {
 This is useful when your application needs to decide at runtime whether an
 aggregator URL is required, or when you want to display server details to the
 user.
+
+## Querying committee details
+
+If you need to fan out requests to individual partial key servers (e.g. to build
+your own aggregator), use `get_committee_info`. It returns
+`Some(ServerType::Committee { .. })` for committee servers and `None` for
+independent ones:
+
+```rust,ignore
+use seal_sdk_rs::base_client::ServerType;
+
+let committee_info = client.get_committee_info(key_server_id).await?;
+
+match committee_info {
+    Some(ServerType::Committee { version, threshold, partial_key_servers }) => {
+        println!("Committee v{version}, threshold: {threshold}");
+        for member in &partial_key_servers {
+            println!(
+                "  Party {}: {} at {}",
+                member.party_id, member.name, member.url
+            );
+        }
+    }
+    _ => {
+        println!("Not a committee server");
+    }
+}
+```
+
+The partial public key bytes (`partial_pk`) are raw BLS12-381 G2 elements that
+can be used to verify each member's partial key response before aggregation.
 
 ## KeyServerConfig
 

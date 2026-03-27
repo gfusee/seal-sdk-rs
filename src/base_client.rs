@@ -30,23 +30,45 @@ use std::collections::HashMap;
 use std::fmt::Display;
 use std::sync::Arc;
 
-/// Whether a key server operates independently or as part of a committee.
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
-pub enum KeyServerType {
-    /// Standalone key server with its own URL.
-    Independent,
-    /// Key server that is part of a committee; requires an external aggregator URL.
-    Committee,
+/// PartialKeyServer struct for a committee member.
+///
+/// Mirrors the on-chain `PartialKeyServer` Move struct.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PartialKeyServer {
+    /// Unique name of the partial key server.
+    pub name: String,
+    /// Server URL, can be updated by the owning member.
+    pub url: String,
+    /// Partial public key (G2 element).
+    pub partial_pk: Vec<u8>,
+    /// Party ID in the DKG committee.
+    pub party_id: u16,
 }
 
-/// Key server object layout containing object id, name, url, and public key.
+/// Server types for KeyServerV2.
+///
+/// Mirrors the on-chain `ServerType` Move enum.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum ServerType {
+    Independent {
+        url: String,
+    },
+    Committee {
+        /// Incremented on every rotation of the committee.
+        version: u32,
+        threshold: u16,
+        /// Vector of partial key servers indexed by party_id.
+        partial_key_servers: Vec<PartialKeyServer>,
+    },
+}
+
+/// Key server object layout containing object id, name, and public key.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct KeyServerInfo {
     pub object_id: ObjectID,
-    pub key_server_type: KeyServerType,
     pub name: String,
-    pub url: String,
     pub public_key: String,
+    pub server_type: ServerType,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -129,6 +151,27 @@ where
             .try_get_with(cache_key, self.sui_client.get_key_server_info(object_id.0))
             .await
             .map_err(unwrap_cache_error)
+    }
+
+    /// Fetch committee details for a committee-type key server.
+    ///
+    /// Reads the `KeyServerV2` dynamic field from the given key server object,
+    /// and if it is a committee server type, returns the threshold, version,
+    /// and partial key server list.
+    ///
+    /// Returns `Ok(None)` if the key server is independent (not a committee).
+    pub async fn get_committee_info<ID>(
+        &self,
+        key_server_id: ID,
+    ) -> Result<Option<ServerType>, SealClientError>
+    where
+        ObjectID: From<ID>,
+    {
+        let info = self.get_key_server_info(key_server_id).await?;
+        match info.server_type {
+            ServerType::Committee { .. } => Ok(Some(info.server_type)),
+            ServerType::Independent { .. } => Ok(None),
+        }
     }
 
     /// Convenience wrapper around [`encrypt_bytes`] that accepts a serializable value.
@@ -712,10 +755,14 @@ where
             let request_bytes = bcs::to_bytes(&request)?;
 
             // Use aggregator URL if provided, otherwise fall back to the on-chain server URL.
+            let on_chain_url = match &server.server_type {
+                ServerType::Independent { url } => url.clone(),
+                ServerType::Committee { .. } => String::new(),
+            };
             let base_url = aggregator_urls
                 .get(&server.object_id)
                 .cloned()
-                .unwrap_or_else(|| server.url.clone());
+                .unwrap_or(on_chain_url);
 
             let request_json_clone = request_json.clone();
             let response_future = async move {
