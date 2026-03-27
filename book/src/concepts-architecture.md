@@ -74,23 +74,23 @@ master secret and serves key requests directly. A **committee** distributes the
 secret across multiple participants via threshold cryptography; an **aggregator**
 collects partial responses and returns the combined result.
 
-The `KeyServerType` enum lets you tell the two apart programmatically:
+The `ServerType` enum lets you tell the two apart programmatically:
 
 ```rust,ignore
-use seal_sdk_rs::base_client::KeyServerType;
+use seal_sdk_rs::base_client::ServerType;
 
-match info.key_server_type {
-    KeyServerType::Independent => { /* server URL is in info.url */ }
-    KeyServerType::Committee   => { /* needs an external aggregator URL */ }
+match &info.server_type {
+    ServerType::Independent { url } => { /* server URL is available */ }
+    ServerType::Committee { .. }    => { /* needs an external aggregator URL */ }
 }
 ```
 
-You can retrieve a key server's metadata (name, URL, public key, type) at any
+You can retrieve a key server's metadata (name, public key, server type) at any
 time with `get_key_server_info`:
 
 ```rust,ignore
 let info = client.get_key_server_info(key_server_id).await?;
-println!("name: {}, type: {:?}", info.name, info.key_server_type);
+println!("name: {}, type: {:?}", info.name, info.server_type);
 ```
 
 For encryption and decryption, the SDK handles both types transparently through

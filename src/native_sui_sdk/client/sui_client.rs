@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use crate::base_client::{KeyServerInfo, KeyServerType};
+use crate::base_client::{KeyServerInfo, PartialKeyServer, ServerType};
 use crate::generic_types::ObjectID;
 use crate::sui_client::SuiClient;
 use async_trait::async_trait;
@@ -164,10 +164,9 @@ impl SuiClientKeyServerExt for sui_sdk::SuiClient {
 
         Ok(KeyServerInfo {
             object_id: ObjectID(key_server_id.into_bytes()),
-            key_server_type: KeyServerType::Independent,
             name,
-            url,
             public_key,
+            server_type: ServerType::Independent { url },
         })
     }
 
@@ -262,41 +261,33 @@ impl SuiClientKeyServerExt for sui_sdk::SuiClient {
             }
         };
 
-        // Parse server_type to extract url and key server type.
+        // Parse server_type to extract url, key server type, and optional committee info.
         // Due to serde untagged deserialization order, the RPC may return a Variant
         // (with an explicit "variant" field) or a Struct (when the SDK deserializes
         // the variant JSON as a struct, ignoring the extra "variant" key).
-        let (url, key_server_type) = match server_type_value {
-            SuiMoveValue::Variant(variant) => {
-                match variant.variant.as_str() {
-                    "Independent" => match variant.fields.get("url") {
-                        Some(SuiMoveValue::String(url)) => {
-                            (url.clone(), KeyServerType::Independent)
-                        }
-                        _ => {
-                            return Err(SuiClientError::MissingKeyServerField {
-                                field_name: "server_type.Independent.url".to_string(),
-                            });
-                        }
-                    },
-                    "Committee" => {
-                        // Committee key servers don't have a single URL.
-                        // The aggregator URL is provided externally via KeyServerConfig.
-                        (String::new(), KeyServerType::Committee)
-                    }
+        let server_type = match server_type_value {
+            SuiMoveValue::Variant(variant) => match variant.variant.as_str() {
+                "Independent" => match variant.fields.get("url") {
+                    Some(SuiMoveValue::String(url)) => ServerType::Independent { url: url.clone() },
                     _ => {
-                        return Err(SuiClientError::InvalidKeyServerDynamicFieldsType {
-                            object_id: key_server_id,
+                        return Err(SuiClientError::MissingKeyServerField {
+                            field_name: "server_type.Independent.url".to_string(),
                         });
                     }
+                },
+                "Committee" => parse_committee_from_fields(&variant.fields, key_server_id)?,
+                _ => {
+                    return Err(SuiClientError::InvalidKeyServerDynamicFieldsType {
+                        object_id: key_server_id,
+                    });
                 }
-            }
+            },
             SuiMoveValue::Struct(ref s) => {
                 // Fallback: serde may deserialize the enum variant as a Struct.
                 // Independent variant has a "url" field, Committee does not.
                 match s.field_value("url") {
-                    Some(SuiMoveValue::String(url)) => (url, KeyServerType::Independent),
-                    _ => (String::new(), KeyServerType::Committee),
+                    Some(SuiMoveValue::String(url)) => ServerType::Independent { url },
+                    _ => parse_committee_from_struct(s, key_server_id)?,
                 }
             }
             _ => {
@@ -308,12 +299,161 @@ impl SuiClientKeyServerExt for sui_sdk::SuiClient {
 
         Ok(KeyServerInfo {
             object_id: ObjectID(key_server_id.into_bytes()),
-            key_server_type,
             name,
-            url,
             public_key,
+            server_type,
         })
     }
+}
+
+/// Parse `ServerType::Committee` from a `SuiMoveVariant`'s fields map.
+fn parse_committee_from_fields(
+    fields: &std::collections::BTreeMap<String, SuiMoveValue>,
+    key_server_id: sui_types::base_types::ObjectID,
+) -> Result<ServerType, SuiClientError> {
+    let version = match fields.get("version") {
+        Some(SuiMoveValue::Number(n)) => *n,
+        _ => {
+            return Err(SuiClientError::MissingKeyServerField {
+                field_name: "server_type.Committee.version".to_string(),
+            });
+        }
+    };
+
+    let threshold = match fields.get("threshold") {
+        Some(SuiMoveValue::Number(n)) => {
+            u16::try_from(*n).map_err(|_| SuiClientError::InvalidKeyServerDynamicFieldsType {
+                object_id: key_server_id,
+            })?
+        }
+        _ => {
+            return Err(SuiClientError::MissingKeyServerField {
+                field_name: "server_type.Committee.threshold".to_string(),
+            });
+        }
+    };
+
+    let partial_key_servers = match fields.get("partial_key_servers") {
+        Some(SuiMoveValue::Vector(entries)) => parse_partial_key_servers(entries, key_server_id)?,
+        _ => {
+            return Err(SuiClientError::MissingKeyServerField {
+                field_name: "server_type.Committee.partial_key_servers".to_string(),
+            });
+        }
+    };
+
+    Ok(ServerType::Committee {
+        version,
+        threshold,
+        partial_key_servers,
+    })
+}
+
+/// Parse `ServerType::Committee` from a `SuiMoveStruct` fallback.
+fn parse_committee_from_struct(
+    s: &sui_sdk::rpc_types::SuiMoveStruct,
+    key_server_id: sui_types::base_types::ObjectID,
+) -> Result<ServerType, SuiClientError> {
+    let version = match s.field_value("version") {
+        Some(SuiMoveValue::Number(n)) => n,
+        _ => {
+            return Err(SuiClientError::MissingKeyServerField {
+                field_name: "server_type.Committee.version".to_string(),
+            });
+        }
+    };
+
+    let threshold = match s.field_value("threshold") {
+        Some(SuiMoveValue::Number(n)) => {
+            u16::try_from(n).map_err(|_| SuiClientError::InvalidKeyServerDynamicFieldsType {
+                object_id: key_server_id,
+            })?
+        }
+        _ => {
+            return Err(SuiClientError::MissingKeyServerField {
+                field_name: "server_type.Committee.threshold".to_string(),
+            });
+        }
+    };
+
+    let partial_key_servers = match s.field_value("partial_key_servers") {
+        Some(SuiMoveValue::Vector(entries)) => parse_partial_key_servers(&entries, key_server_id)?,
+        _ => {
+            return Err(SuiClientError::MissingKeyServerField {
+                field_name: "server_type.Committee.partial_key_servers".to_string(),
+            });
+        }
+    };
+
+    Ok(ServerType::Committee {
+        version,
+        threshold,
+        partial_key_servers,
+    })
+}
+
+/// Parse a vector of partial key server Move structs into `PartialKeyServer` entries.
+fn parse_partial_key_servers(
+    entries: &[SuiMoveValue],
+    key_server_id: sui_types::base_types::ObjectID,
+) -> Result<Vec<PartialKeyServer>, SuiClientError> {
+    entries
+        .iter()
+        .map(|entry| {
+            let s = match entry {
+                SuiMoveValue::Struct(s) => s,
+                _ => {
+                    return Err(SuiClientError::InvalidKeyServerDynamicFieldsType {
+                        object_id: key_server_id,
+                    });
+                }
+            };
+
+            let name = match s.field_value("name") {
+                Some(SuiMoveValue::String(name)) => name,
+                Some(SuiMoveValue::Address(addr)) => addr.to_string(),
+                _ => String::new(),
+            };
+
+            let url = match s.field_value("url") {
+                Some(SuiMoveValue::String(url)) => url,
+                _ => {
+                    return Err(SuiClientError::MissingKeyServerField {
+                        field_name: "partial_key_server.url".to_string(),
+                    });
+                }
+            };
+
+            let partial_pk = match s.field_value("partial_pk") {
+                Some(SuiMoveValue::Vector(pk_values)) => parse_pk_bytes(key_server_id, pk_values)?,
+                _ => {
+                    return Err(SuiClientError::MissingKeyServerField {
+                        field_name: "partial_key_server.partial_pk".to_string(),
+                    });
+                }
+            };
+
+            let party_id = match s.field_value("party_id") {
+                Some(SuiMoveValue::Number(n)) => u16::try_from(n).map_err(|_| {
+                    SuiClientError::InvalidKeyServerDynamicFieldsType {
+                        object_id: key_server_id,
+                    }
+                })?,
+                _ => {
+                    return Err(SuiClientError::MissingKeyServerField {
+                        field_name: "partial_key_server.party_id".to_string(),
+                    });
+                }
+            };
+
+            Ok(PartialKeyServer {
+                name,
+                url,
+                partial_pk,
+                party_id,
+            })
+        })
+        .collect()
 }
 
 fn parse_pk_bytes(
