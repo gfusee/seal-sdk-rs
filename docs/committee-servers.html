@@ -51,7 +51,7 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-44101b25.js";
+            window.path_to_searchindex_js = "searchindex-602a1a6d.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-c99c71f3.js"></script>
@@ -216,23 +216,49 @@ committees because the aggregator endpoint is provided by the caller.</li>
 <p>The SDK reads the V2 dynamic field and falls back to V1 for older key servers.</p>
 <h2 id="querying-key-server-metadata"><a class="header" href="#querying-key-server-metadata">Querying key server metadata</a></h2>
 <p>Before encrypting or decrypting, you can inspect a key server’s metadata with
-<code>get_key_server_info</code>. The returned <code>KeyServerInfo</code> includes a <code>key_server_type</code>
-field that tells you whether the server is independent or part of a committee:</p>
-<pre><code class="language-rust ignore">use seal_sdk_rs::base_client::KeyServerType;
+<code>get_key_server_info</code>. The returned <code>KeyServerInfo</code> includes a <code>server_type</code>
+field — a <code>ServerType</code> enum that mirrors the on-chain Move type:</p>
+<pre><code class="language-rust ignore">use seal_sdk_rs::base_client::ServerType;
 
 let info = client.get_key_server_info(key_server_id).await?;
 
-match info.key_server_type {
-    KeyServerType::Independent =&gt; {
-        println!("Independent server at {}", info.url);
+match &amp;info.server_type {
+    ServerType::Independent { url } =&gt; {
+        println!("Independent server at {url}");
     }
-    KeyServerType::Committee =&gt; {
-        println!("Committee server — provide an aggregator URL for decryption");
+    ServerType::Committee { version, threshold, partial_key_servers } =&gt; {
+        println!("Committee v{version}, threshold {threshold}");
+        println!("{} partial key servers", partial_key_servers.len());
     }
 }</code></pre>
 <p>This is useful when your application needs to decide at runtime whether an
 aggregator URL is required, or when you want to display server details to the
 user.</p>
+<h2 id="querying-committee-details"><a class="header" href="#querying-committee-details">Querying committee details</a></h2>
+<p>If you need to fan out requests to individual partial key servers (e.g. to build
+your own aggregator), use <code>get_committee_info</code>. It returns
+<code>Some(ServerType::Committee { .. })</code> for committee servers and <code>None</code> for
+independent ones:</p>
+<pre><code class="language-rust ignore">use seal_sdk_rs::base_client::ServerType;
+
+let committee_info = client.get_committee_info(key_server_id).await?;
+
+match committee_info {
+    Some(ServerType::Committee { version, threshold, partial_key_servers }) =&gt; {
+        println!("Committee v{version}, threshold: {threshold}");
+        for member in &amp;partial_key_servers {
+            println!(
+                "  Party {}: {} at {}",
+                member.party_id, member.name, member.url
+            );
+        }
+    }
+    _ =&gt; {
+        println!("Not a committee server");
+    }
+}</code></pre>
+<p>The partial public key bytes (<code>partial_pk</code>) are raw BLS12-381 G2 elements that
+can be used to verify each member’s partial key response before aggregation.</p>
 <h2 id="keyserverconfig"><a class="header" href="#keyserverconfig">KeyServerConfig</a></h2>
 <p><code>KeyServerConfig</code> wraps a key server’s object ID with an optional aggregator URL:</p>
 <pre><code class="language-rust ignore">use seal_sdk_rs::base_client::KeyServerConfig;
