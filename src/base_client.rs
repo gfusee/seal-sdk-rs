@@ -810,7 +810,7 @@ where
                         server.object_id,
                         url,
                         response.status,
-                        &response.text[..response.text.len().min(500)],
+                        response.text.chars().take(500).collect::<String>(),
                     );
                     return Err(SealClientError::ErrorWhileFetchingDerivedKeys {
                         url,
