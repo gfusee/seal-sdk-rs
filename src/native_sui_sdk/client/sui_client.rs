@@ -58,8 +58,28 @@ impl SuiClient for sui_sdk::SuiClient {
 
         // Try V2 first, fall back to V1 if V2 dynamic field doesn't exist.
         match self.get_key_server_info_v2(key_server_id).await {
-            Ok(info) => Ok(info),
-            Err(_) => self.get_key_server_info_v1(key_server_id).await,
+            Ok(info) => {
+                log::debug!(
+                    "seal: resolved key server object_id={} type={:?}",
+                    info.object_id,
+                    info.server_type,
+                );
+                Ok(info)
+            }
+            Err(err) => {
+                log::debug!(
+                    "seal: V2 resolution failed for object_id={}, falling back to V1: {}",
+                    key_server_id,
+                    err,
+                );
+                let info = self.get_key_server_info_v1(key_server_id).await?;
+                log::debug!(
+                    "seal: resolved key server (V1) object_id={} type={:?}",
+                    info.object_id,
+                    info.server_type,
+                );
+                Ok(info)
+            }
         }
     }
 }

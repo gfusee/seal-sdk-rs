@@ -723,13 +723,29 @@ where
             let cache_key = KeyServerInfoCacheKey::new(key_server.object_id);
 
             let future = async move {
-                self.key_server_info_cache
+                let result = self
+                    .key_server_info_cache
                     .try_get_with(
                         cache_key,
                         self.sui_client.get_key_server_info(key_server.object_id.0),
                     )
                     .await
-                    .map_err(unwrap_cache_error)
+                    .map_err(unwrap_cache_error);
+
+                match &result {
+                    Ok(info) => log::debug!(
+                        "seal: resolved key server object_id={} type={:?}",
+                        info.object_id,
+                        info.server_type,
+                    ),
+                    Err(err) => log::debug!(
+                        "seal: failed to resolve key server object_id={}: {}",
+                        key_server.object_id,
+                        err,
+                    ),
+                }
+
+                result
             };
 
             key_server_info_futures.push(future);
@@ -749,6 +765,12 @@ where
         aggregator_urls: &HashMap<ObjectID, String>,
     ) -> Result<Vec<DerivedKeys>, SealClientError> {
         let request_json = request.to_json_string()?;
+
+        log::debug!(
+            "seal: fetching keys from {} servers, threshold={}",
+            key_servers_info.len(),
+            threshold,
+        );
 
         let mut seal_responses_futures = Vec::new();
         for server in key_servers_info.iter() {
@@ -772,12 +794,24 @@ where
                 headers.insert("Content-Type".to_string(), "application/json".to_string());
 
                 let url = format!("{}/v1/fetch_key", base_url);
+                log::debug!(
+                    "seal: requesting key from server object_id={} base_url={}",
+                    server.object_id,
+                    base_url,
+                );
                 let response = self
                     .http_client
                     .post(&url, headers, request_json_clone)
                     .await?;
 
                 if !response.is_success() {
+                    log::debug!(
+                        "seal: key server error object_id={} url={} status={} body={}",
+                        server.object_id,
+                        url,
+                        response.status,
+                        response.text.chars().take(500).collect::<String>(),
+                    );
                     return Err(SealClientError::ErrorWhileFetchingDerivedKeys {
                         url,
                         status: response.status,
@@ -801,10 +835,22 @@ where
         let seal_responses: Vec<DerivedKeys> = join_all(seal_responses_futures)
             .await
             .into_iter()
-            .filter_map(|e| e.ok())
+            .filter_map(|e| {
+                if let Err(ref err) = e {
+                    log::debug!("seal: key server response failed: {}", err);
+                }
+                e.ok()
+            })
             .collect();
 
         let seal_responses_len = seal_responses.len();
+
+        log::debug!(
+            "seal: received {}/{} key responses (threshold={})",
+            seal_responses_len,
+            key_servers_info.len(),
+            threshold,
+        );
 
         if seal_responses_len < threshold as usize {
             return Err(SealClientError::InsufficientKeys {
