@@ -11,7 +11,7 @@ async-trait = "0.1"
 anyhow = "1"
 fastcrypto = { git = "https://github.com/MystenLabs/fastcrypto", rev = "d1fcb853196c3de7888ed8fad74f419b8c8fbe3b", features = ["aes"] }
 serde = { version = "1", features = ["derive"] }
-sui-sdk-types = { git = "https://github.com/MystenLabs/sui-rust-sdk.git", features = ["serde"], rev = "7b020c71d12616c9674b34874f526ac3aa6e5e64", package = "sui-sdk-types" }
+sui-sdk-types = { git = "https://github.com/MystenLabs/sui-rust-sdk.git", features = ["serde"], tag = "sui-sdk-types-0.3.1", package = "sui-sdk-types" }
 base64 = "0.22.1"
 futures = "0.3"
 tokio = { version = "1", features = ["full"] }
@@ -27,10 +27,10 @@ log = "0.4"
 reqwest = { version = "0.11", optional = true, default-features = false, features = ["json", "native-tls"] }
 http = { version = "0.2", optional = true }
 moka = { version = "0.12", features = ["future"], optional = true }
-sui_types = { git = "https://github.com/MystenLabs/sui", tag = "testnet-v1.68.0", package = "sui-types", optional = true }
-sui_keys = { git = "https://github.com/MystenLabs/sui", tag = "testnet-v1.68.0", package = "sui-keys", optional = true }
-sui_sdk = { git = "https://github.com/MystenLabs/sui", tag = "testnet-v1.68.0", package = "sui-sdk", optional = true }
-shared_crypto = { git = "https://github.com/MystenLabs/sui", tag = "testnet-v1.68.0", package = "shared-crypto", optional = true }
+sui_types = { git = "https://github.com/MystenLabs/sui", tag = "mainnet-v1.68.1", package = "sui-types", optional = true }
+sui_keys = { git = "https://github.com/MystenLabs/sui", tag = "mainnet-v1.68.1", package = "sui-keys", optional = true }
+sui_sdk = { git = "https://github.com/MystenLabs/sui", tag = "mainnet-v1.68.1", package = "sui-sdk", optional = true }
+shared_crypto = { git = "https://github.com/MystenLabs/sui", tag = "mainnet-v1.68.1", package = "shared-crypto", optional = true }
 
 [dev-dependencies]
 testcontainers = "=0.25.0"
