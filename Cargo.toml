@@ -24,7 +24,7 @@ chrono = "0.4"
 hex = "0.4"
 log = "0.4"
 
-reqwest = { version = "0.11", optional = true, default-features = false, features = ["json", "native-tls"] }
+reqwest = { version = "0.11", optional = true, default-features = false, features = ["json"] }
 http = { version = "0.2", optional = true }
 moka = { version = "0.12", features = ["future"], optional = true }
 sui_types = { git = "https://github.com/MystenLabs/sui", tag = "mainnet-v1.68.1", package = "sui-types", optional = true }
@@ -37,7 +37,8 @@ testcontainers = "=0.25.0"
 sui-json-rpc-types = { git = "https://github.com/mystenlabs/sui", rev = "22642cf", package = "sui-json-rpc-types" }
 
 [features]
-default = ["client", "native-tls", "native-sui-sdk"]
+default = ["client", "rustls-tls", "native-sui-sdk"]
+rustls-tls = ["reqwest/rustls-tls"]
 native-tls = ["reqwest/native-tls"]
 client = ["reqwest", "http"]
 moka-client = ["moka"]
