@@ -137,7 +137,7 @@ impl SessionKey {
         let now_ms = Utc::now().timestamp_millis() as u64;
 
         let Some(message_to_sign) = signed_message(
-            sui_sdk_types::ObjectId::from(package_id).to_string(),
+            sui_sdk_types::Address::from(package_id).to_string(),
             session_key.public(),
             now_ms,
             ttl_min,
