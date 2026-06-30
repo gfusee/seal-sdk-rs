@@ -791,6 +791,7 @@ where
                 let mut headers = HashMap::new();
 
                 headers.insert("Client-Sdk-Version".to_string(), "1.0.0".to_string());
+                headers.insert("Client-Sdk-Type".to_string(), "typescript".to_string());
                 headers.insert("Content-Type".to_string(), "application/json".to_string());
 
                 let url = format!("{}/v1/fetch_key", base_url);
