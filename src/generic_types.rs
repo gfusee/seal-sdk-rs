@@ -33,14 +33,14 @@ impl From<[u8; 32]> for ObjectID {
     }
 }
 
-impl From<ObjectID> for sui_sdk_types::ObjectId {
+impl From<ObjectID> for sui_sdk_types::Address {
     fn from(value: ObjectID) -> Self {
         Self::new(value.0)
     }
 }
 
-impl From<sui_sdk_types::ObjectId> for ObjectID {
-    fn from(value: sui_sdk_types::ObjectId) -> Self {
+impl From<sui_sdk_types::Address> for ObjectID {
+    fn from(value: sui_sdk_types::Address) -> Self {
         Self::from(value.into_inner())
     }
 }
@@ -57,23 +57,11 @@ impl From<seal_crypto::ObjectID> for ObjectID {
     }
 }
 
-impl From<ObjectID> for sui_sdk_types::Address {
-    fn from(value: ObjectID) -> Self {
-        Self::new(value.0)
-    }
-}
-
-impl From<sui_sdk_types::Address> for ObjectID {
-    fn from(value: sui_sdk_types::Address) -> Self {
-        Self::from(value.into_inner())
-    }
-}
-
 impl FromStr for ObjectID {
     type Err = anyhow::Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        sui_sdk_types::ObjectId::from_str(s)
+        sui_sdk_types::Address::from_str(s)
             .map(Into::into)
             .map_err(|_| anyhow!("Failed to parse ObjectID: {s}"))
     }
@@ -81,7 +69,7 @@ impl FromStr for ObjectID {
 
 impl Display for ObjectID {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        sui_sdk_types::ObjectId::from(*self).fmt(f)
+        sui_sdk_types::Address::from(*self).fmt(f)
     }
 }
 
@@ -90,7 +78,7 @@ impl Serialize for ObjectID {
     where
         S: Serializer,
     {
-        sui_sdk_types::ObjectId::from(*self).serialize(serializer)
+        sui_sdk_types::Address::from(*self).serialize(serializer)
     }
 }
 
@@ -99,7 +87,7 @@ impl<'de> Deserialize<'de> for ObjectID {
     where
         D: Deserializer<'de>,
     {
-        sui_sdk_types::ObjectId::deserialize(deserializer).map(Self::from)
+        sui_sdk_types::Address::deserialize(deserializer).map(Self::from)
     }
 }
 
