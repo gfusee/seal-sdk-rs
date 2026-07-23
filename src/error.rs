@@ -14,6 +14,7 @@
 
 use crate::generic_types::ObjectID;
 use fastcrypto::error::FastCryptoError;
+#[cfg(feature = "reqwest")]
 use http::header::{InvalidHeaderName, InvalidHeaderValue};
 use std::convert::Infallible;
 use thiserror::Error;
