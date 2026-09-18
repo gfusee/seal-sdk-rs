@@ -27,15 +27,15 @@ log = "0.4"
 reqwest = { version = "0.11", optional = true, default-features = false, features = ["json"] }
 http = { version = "0.2", optional = true }
 moka = { version = "0.12", features = ["future"], optional = true }
-# testnet-v1.75.1 was verified at 623521008f1c3afa3a1adbb6c3c44c39c46c5e17.
-sui_types = { git = "https://github.com/MystenLabs/sui", tag = "testnet-v1.75.1", package = "sui-types", optional = true }
-sui_keys = { git = "https://github.com/MystenLabs/sui", tag = "testnet-v1.75.1", package = "sui-keys", optional = true }
-sui_sdk = { git = "https://github.com/MystenLabs/sui", tag = "testnet-v1.75.1", package = "sui-sdk", optional = true }
-shared_crypto = { git = "https://github.com/MystenLabs/sui", tag = "testnet-v1.75.1", package = "shared-crypto", optional = true }
+# testnet-v1.80.0 was verified at ceaaff1cc84c1ba2f12c4e7928914ece81fbdd0f.
+sui_types = { git = "https://github.com/MystenLabs/sui", tag = "testnet-v1.80.0", package = "sui-types", optional = true }
+sui_keys = { git = "https://github.com/MystenLabs/sui", tag = "testnet-v1.80.0", package = "sui-keys", optional = true }
+sui_sdk = { git = "https://github.com/MystenLabs/sui", tag = "testnet-v1.80.0", package = "sui-sdk", optional = true }
+shared_crypto = { git = "https://github.com/MystenLabs/sui", tag = "testnet-v1.80.0", package = "shared-crypto", optional = true }
 
 [dev-dependencies]
 testcontainers = "=0.25.0"
-sui-json-rpc-types = { git = "https://github.com/MystenLabs/sui", tag = "testnet-v1.75.1", package = "sui-json-rpc-types" }
+sui-json-rpc-types = { git = "https://github.com/MystenLabs/sui", tag = "testnet-v1.80.0", package = "sui-json-rpc-types" }
 
 [features]
 default = ["client", "rustls-tls", "native-sui-sdk"]
